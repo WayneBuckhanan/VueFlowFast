@@ -1,6 +1,7 @@
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
-// WLB Baseline Helpers
+import Vue from '@vitejs/plugin-vue'
+// Baseline Helpers
 import VueRouter from 'unplugin-vue-router/vite'
 import { VueRouterAutoImports } from 'unplugin-vue-router'
 import Icons from 'unplugin-icons/vite'
@@ -8,14 +9,28 @@ import IconsResolver from 'unplugin-icons/resolver'
 import Components from 'unplugin-vue-components/vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import Layouts from 'vite-plugin-vue-layouts'
-import Vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    AutoImport({ imports: [
+      'vue', 'pinia', //'vue-router', // presets from github.com/unjs/unimport used by unplugin-auto-import
+      VueRouterAutoImports, // swap 'vue-router' for VueRouterAutoImports from unplugin-vue-router
+      //{ '@/store/auth.js': ['useAuthStore']}, // Pinia auth store
+    ]}),
+    Icons({ scale: 1.5, defaultStyle: 'vertical-align:middle;', autoInstall: true, }),
+    Components({
+      resolvers: [ IconsResolver({prefix:'icon',}), ],
+    }),
+    Layouts({
+      //pagesDir: 'src/views', // default 'src/pages',
+      //defaultLayout: 'default', // default 'default', // no .vue extension
+      //layoutsDirs: 'src/layouts', // default 'src/layouts',
+      //exclude: '', // default ??
+    }),
     VueRouter({
-      routesFolder: 'src/views', // to match vuetify default
       routeBlockLang: 'yaml',
+      //routesFolder: 'src/views',
       /* config options w/defaults */
       //routesFolder: 'src/pages',
       //extensions: ['.vue'],
@@ -27,21 +42,6 @@ export default defineConfig({
     }),
     // ⚠️  VueRouter() must be placed before Vue
     Vue(),
-    Icons({ scale: 1.5, defaultStyle: 'vertical-align:middle;', autoInstall: true, }),
-    Components({
-      resolvers: [ IconsResolver({prefix:'icon',}), ],
-    }),
-    AutoImport({ imports: [
-      'vue', 'pinia', //'vue-router', // presets from github.com/unjs/unimport used by unplugin-auto-import
-      VueRouterAutoImports, // swap 'vue-router' for VueRouterAutoImports from unplugin-vue-router
-      //{ '@/store/auth.js': ['useAuthStore']}, // Pinia auth store
-    ]}),
-    Layouts({
-      pagesDir: 'src/views', // default 'src/pages',
-      //defaultLayout: 'default', // default 'default', // no .vue extension
-      //layoutsDirs: 'src/layouts', // default 'src/layouts',
-      //exclude: '', // default ??
-    }),
   ],
   resolve: {
     alias: {
@@ -50,6 +50,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    open: true,
   },
-  //base: "/alpha/",
+  build: {
+    chunkSizeWarningLimit: 650,
+  },
+  //base: "/subdir/",
 })

@@ -6,7 +6,7 @@ VaLayout(:left="{ absolute: breakpoints.smDown }").h-screen
         VaButton(@click="showSidebar = !showSidebar" :icon="showSidebar ? 'menu_open' : 'menu'")
       template(#center)
         VaNavbarItem.font-bold.text-lg
-          | Project Title
+          | {{ title }}
   template(#left)
     VaSidebar(v-model="showSidebar")
       SidebarContents
@@ -17,6 +17,9 @@ VaLayout(:left="{ absolute: breakpoints.smDown }").h-screen
 
 <script setup>
 import { useBreakpoint } from "vuestic-ui"
-const showSidebar = ref(true)
+const showSidebar = ref(false)
 const breakpoints = useBreakpoint()
+
+const route = useRoute()
+const title = route?.meta?.['title'] || 'Default Header Text'
 </script>
