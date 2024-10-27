@@ -2,7 +2,7 @@
 
 **A pre-configured Vue 3+Vite 3 project for quickly deploying ideas using highly readable SFCs.**
 
-Inspired by the Vitesse repos, this is a baseline repo to clone as a start for a new Vue 3 project. It leverages many of the unplugin packages and helpers like Pug to remove much of the clutter from the SFCs and lets you focus on your app fast and stay in the flow.
+Inspired by the Vitesse repos, this is a baseline repo to clone as a start for a new Vue 3 project. It leverages many of the unplugin packages and helpers like Pug to remove much of the clutter from the single-file components (SFCs) and lets you focus on your app fast and stay in the flow.
 
 
 ## Features
@@ -74,7 +74,7 @@ The majority of the Vue configuration is in `src/main.js`. Much like our auto im
 The less Vue-centric configs are located in the root directory as `*.config.js` files. The vite and tailwind configs have comments explaining most of the config choices made and lists many of the default values you might want to adjust. Other configs are auto generated and should be at defaults from the packages that generated them.
 
 
-### Caveats and Notes
+## Caveats and Notes
 
 - Due to the auto import of components, you cannot have SFCs anywhere in `src/pages/` or `src/components` with the same name. This includes in subdirectories or with equivalent PascalCase and kebab-case names. E.g. `src/pages/blog/thing-one.vue` will conflict with `src/pages/product/thing-one.vue` and with `src/components/widgets/ThingOne.vue`.
 - In dev mode, updating the `<route>` tag or contents of a layout file typically isn't picked up by the Hot Module Replacement (HMR) and requires a manual restart of the Vite server ('r<Enter>' on the Vite console) to see the changes.
@@ -82,8 +82,11 @@ The less Vue-centric configs are located in the root directory as `*.config.js` 
 - Tailwind CSS, PostCSS, and AutoPrefixer are indirectly included by way of the `vitawind` package. If you want a version of one of those that is more recent than what vitawind includes, you can use npm to install them directly.
 - Tailwind CSS and Vuestic UI breakpoints and colors can be synchronized in either direction. See the [Vuestic UI docs](https://ui.vuestic.dev/styles/tailwind) for more details.
 - If you would prefer a different UI toolkit than Vuestic UI, simply remove the vuestic-ui package and the config block in `src/main.js`. You'll want to make sure you are not using any of the Va* components. The only files that should reference Vuestic UI components are the default layout and the SidebarContents component it uses.
+- Pug syntax is lovely -- until it isn't. There are a few of the Tailwind CSS utility class patterns that do not play nicely in pug's `tag.class` approach to adding classes. Instead, you'll have to wrap any class names with `!:/[]` characters in a class property. You can have both styles of class lists, just know you can only have a single parenthetical for properties per tag. E.g. `h2.text-2xl.font-bold(class="dark:bg-slate-100 w-1/2 h-[10vh] !flex-grow")`.
 
 ## Possible Add-Ons
+
+Beyond the core functionality mentioned above, there are several additions or patterns I frequently find myself using with this template. Included below are some guides and snippets for reference.
 
 ### Setting page values
 
@@ -105,6 +108,8 @@ Route params can also be configured by naming our files with placeholders to all
 
 ### Adding Pinia stores
 
+When you find yourself passing props down and emitting up through multiple layers of SFCs or use more than the occassional [provide/inject](https://vuejs.org/guide/components/provide-inject) pair in a layout, you probably should be using a store for shared state across components.
+
 Create a `src/stores` directory and include your store definitions there. There is already a commented stub in the `vite.config.js` file showing how to enable auto-import of a store's composable.
 
 Add the following snippet to the `src/main.js` file between `createApp()` and `app.mount()`:
@@ -114,6 +119,8 @@ Add the following snippet to the `src/main.js` file between `createApp()` and `a
 import { createPinia } from 'pinia'
 app.use(createPinia())
 ```
+
+I have also found [pinia-plugin-persistedstate](https://github.com/prazdevs/pinia-plugin-persistedstate) and [pinia-shared-state](https://github.com/wobsoriano/pinia-shared-state) useful for persisting across time and sharing across browser tabs in the moment.
 
 
 ### Auth Gating
@@ -148,7 +155,7 @@ router.beforeResolve(async (to, from, next) => {
 One use-case for this pattern is using the AWS Amplify libraries and components to interface with services like Cognito and API Gateway. You do not need to be using the Amplify layer of services on AWS to use the Amplify functions, components, and UI elements in your Vue project. You can include a manually drafted Amplify configuration block and initialization in the `src/main.js` file and then get access to the Authenticator component and API calling helper functions from Amplify libraries. Whether the benefits are worth the overhead is an exercise left to the reader.
 
 
-### Consider complementary packages
+### Additional Complementary Packages
 
 This repo is for getting into flow fast with your Vue project. Once you've built something worth maintaining, we highly recommend adding the following support packages:
 
@@ -162,7 +169,7 @@ Backend services can be added with a single config file via [SST](https://sst.de
 
 ## License
 
-[MIT License](LICENSE.md)
+[MIT License](LICENSE)
 
 Copyright (C) 2024 Wayne Buckhanan
 
