@@ -2,10 +2,10 @@
 p.h-4
 VaSidebarItem(to="/")
   VaSidebarItemContent
-    icon-mdi-home
+    VaIcon(name="home")
     VaSidebarItemTitle Home
 VaSidebarItem(to="help")
   VaSidebarItemContent
-    icon-mdi-help
+    VaIcon(name="help")
     VaSidebarItemTitle Help
 </template>

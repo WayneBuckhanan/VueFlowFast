@@ -10,6 +10,7 @@ meta:
     | Count is {{ count }}
     button(@click="increment").bg-emerald-500.rounded.w-fit.p-2
       | Add One
+    VaIcon(name="umbrella" size="48px" :rotation="90*count").w-12
 </template>
 
 <script setup>

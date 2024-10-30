@@ -4,8 +4,6 @@ import Vue from '@vitejs/plugin-vue'
 // Baseline Helpers
 import VueRouter from 'unplugin-vue-router/vite'
 import { VueRouterAutoImports } from 'unplugin-vue-router'
-import Icons from 'unplugin-icons/vite'
-import IconsResolver from 'unplugin-icons/resolver'
 import Components from 'unplugin-vue-components/vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import Layouts from 'vite-plugin-vue-layouts'
@@ -18,10 +16,7 @@ export default defineConfig({
       VueRouterAutoImports, // swap 'vue-router' for VueRouterAutoImports from unplugin-vue-router
       //{ '@/store/auth.js': ['useAuthStore']}, // Pinia auth store
     ]}),
-    Icons({ scale: 1.5, defaultStyle: 'vertical-align:middle;', autoInstall: true, }),
-    Components({
-      resolvers: [ IconsResolver({prefix:'icon',}), ],
-    }),
+    Components(),
     Layouts({
       //pagesDir: 'src/views', // default 'src/pages',
       //defaultLayout: 'default', // default 'default', // no .vue extension

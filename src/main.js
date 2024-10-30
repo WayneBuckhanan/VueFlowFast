@@ -18,39 +18,26 @@ router.beforeEach((to)=> {
 app.use(router)
 
 // Vuestic UI config
-import { createVuestic, createIconsConfig } from 'vuestic-ui'
+import { createVuestic } from 'vuestic-ui'
+const breakpoint = {
+  thresholds: {
+    // Vuestic UI default breakpoints, includes 'xs' selector for < 640px
+    // 'sm':  640, 'md':    1024, 'lg':    1440, 'xl':    1920,
+    // Tailwind CSS default breakpoints
+    // 'sm':  640, 'md':     768, 'lg':    1024, 'xl':    1280, '2xl':   1536,
+    // updated variation on https://www.freecodecamp.org/news/the-100-correct-way-to-do-css-breakpoints-88d6a5ba1862/
+    'sm':     700, 'md':    1400, 'lg':    2100,                'xl':    3500, '2xl':   7000,
+    '720p':   700, '1080p': 1400, '1440p': 2100, '2k':    2100, '4k':    3500, '8k':    7000,
+  },
+}
 const colors = {
   currentPresetName: (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light',
   variables: { primary: '#005c78', },
-}
-const fonts = [{
-  name: 'mdi-{icon}',
-  resolve: ({ icon }) => ({
-    //class: 'mdi', //class: 'material-design-icons',
-    content: icon,
-    tag: 'span',
-  }),
-}]
-const breakpoint = {
-  thresholds: {
-    'sm':     700, //640,
-    'md':    1400, //768,
-    'lg':    2100, //1024,
-    'xl':    3500, //1280,
-    '2xl':   7000, //1536,
-    '720p':   700,
-    '1080p': 1400,
-    '1440p': 2100,
-    '2k':    2100,
-    '4k':    3500,
-    '8k':    7000,
-  },
 }
 const vuestic = createVuestic({
   config: {
     breakpoint,
     colors,
-    icons: createIconsConfig({ fonts }),
   }
 })
 app.use(vuestic)

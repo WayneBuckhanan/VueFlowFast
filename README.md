@@ -12,7 +12,6 @@ Inspired by the Vitesse repos, this is a baseline repo to clone as a start for a
 - Pug integration to allow for clean <template lang="pug"> blocks
 - Unplugin auto imports of components, functions, and composables for clean <script setup> blocks
 - Tailwind CSS utility classes often eliminate the need for a <style> block
-- Easily use all [Icônes](https://icones.js.org/) icon sets thanks to Iconify (via unplugin-icons) 
 - Vuestic UI provides a cohesive component library to build quickly
 
 
@@ -165,6 +164,22 @@ This repo is for getting into flow fast with your Vue project. Once you've built
 Additionally, you may find that you need or want to define more complex CSS than the Tailwind utility classes easily provide. Stylus can be added for Pug-like features in your CSS blocks with no additional config needed. Simply run `npm install stylus` and use it in your `<style lang="stylus">` tags.
 
 Backend services can be added with a single config file via [SST](https://sst.dev). For example, Javascript or Typescript functions can be defined in files in an `api/` directory and deployed to Amazon AWS, Cloudflare, or other services supported by SST or the underlying Pulumi providers. See the [examples in the SST docs](https://sst.dev/docs) for more ideas on how to leverage this "infrastructure as code" (IaC) approach to complement this repo's quick front-end development with quick back-end services as well.
+
+
+## TODO
+
+- Update Vuestic UI integration to use the [@vuestic/compiler](https://ui.vuestic.dev/compiler/vuestic-config)
+- Branches/alt repos for more in-depth demos/starters?
+  - more page examples
+  - eslint, prettier, testing examples
+  - Preline with and/or replacing Vuestic UI
+  - Pinia store example
+  - Static site deploy via SST (to AWS, soon to Cloudflare)
+  - Serverless resources on AWS via SST
+  - Cloudflare Pages deploy via Wrangler
+- Link all un/plugins, packages, and docs
+- Thinking in Vue article?
+- (What would you like to see?)
 
 
 ## License
