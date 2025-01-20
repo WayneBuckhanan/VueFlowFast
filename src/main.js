@@ -5,13 +5,15 @@ import App from './App.vue'
 const app = createApp(App)
 
 // Vue Router with unplugin-vue-router config
-import { createRouter, createWebHistory } from 'vue-router/auto'
-import { setupLayouts } from 'virtual:generated-layouts'
-import { routes } from 'vue-router/auto-routes'
+import { createRouter, createWebHistory } from 'vue-router'
+import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: setupLayouts(routes),
+  routes,
 })
+if(import.meta.hot) {
+  handleHotUpdate(router)
+}
 router.beforeEach((to)=> {
   document.title = to?.meta?.title ? to.meta.title : DEFAULT_PAGE_TITLE
 })

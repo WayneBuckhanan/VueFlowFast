@@ -6,7 +6,6 @@ import VueRouter from 'unplugin-vue-router/vite'
 import { VueRouterAutoImports } from 'unplugin-vue-router'
 import Components from 'unplugin-vue-components/vite'
 import AutoImport from 'unplugin-auto-import/vite'
-import Layouts from 'vite-plugin-vue-layouts'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -17,12 +16,6 @@ export default defineConfig({
       //{ '@/store/auth.js': ['useAuthStore']}, // Pinia auth store
     ]}),
     Components(),
-    Layouts({
-      //pagesDir: 'src/views', // default 'src/pages',
-      //defaultLayout: 'default', // default 'default', // no .vue extension
-      //layoutsDirs: 'src/layouts', // default 'src/layouts',
-      //exclude: '', // default ??
-    }),
     VueRouter({
       routeBlockLang: 'yaml',
       //routesFolder: 'src/views',
