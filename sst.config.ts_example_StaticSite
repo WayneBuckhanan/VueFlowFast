@@ -1,0 +1,25 @@
+/// <reference path="./.sst/platform/config.d.ts" />
+
+export default $config({
+  app(input) {
+    return {
+      name: "vueflowfast-example-staticsite",
+      removal: input?.stage === "production" ? "retain" : "remove",
+      home: "aws",
+      providers: {
+        aws: {
+          //profile: input?.stage === "production" ? "production" : "default",
+        },
+      },
+    }
+  },
+
+  async run() {
+    const site = new sst.aws.StaticSite("FrontEnd", {
+      build: {
+        command: "npm run build",
+        output: "dist"
+      },
+    })
+  },
+})
