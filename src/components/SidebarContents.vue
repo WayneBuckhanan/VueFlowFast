@@ -1,11 +1,10 @@
 <template lang="pug">
-p.h-4
-VaSidebarItem(to="/")
-  VaSidebarItemContent
-    VaIcon(name="home")
-    VaSidebarItemTitle Home
-VaSidebarItem(to="help")
-  VaSidebarItemContent
-    VaIcon(name="help")
-    VaSidebarItemTitle Help
+Menu(:model="menuItems").mx-2
 </template>
+
+<script setup>
+const menuItems = [
+  { label: 'Home', icon: 'pi pi-home', url: '/' },
+  { label: 'Help', icon: 'pi pi-question', url: '/help' },
+]
+</script>
