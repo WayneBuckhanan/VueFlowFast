@@ -4,18 +4,30 @@ meta:
 </route>
 
 <template lang="pug">
-.m-8
+.m-8.flex-none
   .flex.flex-col.gap-4
     h1.text-3xl Hello
-    | Count is {{ count }}
-    button(@click="increment").bg-emerald-500.rounded.w-fit.p-2
+    .text-base Count is {{ count }}
+    Button(@click="increment" class="rotate-0 rotate-90 rotate-180 rotate-270 !rotate-0").bg-emerald-500.rounded.w-fit.p-2
       | Add One
-    VaIcon(name="umbrella" size="48px" :rotation="90*count").w-12
+    .text-base: i(:class="`rotate-${90*count}`").origin-center.pi.pi-flag-fill.w-12
+    OrderList(v-model="items" v-model:selection="selectedItems" :metaKeySelection="true")
+      template(#option="{option}")
+        .text-lg {{ option.data }}
+    .text-lg Selected: {{ selectedItems }}
 </template>
 
 <script setup>
-const count = ref(1)
+const count = ref(0)
 function increment() {
-  count.value++
+  count.value = (count.value+1)%4
 }
+
+const selectedItems = ref([])
+const items = ref([
+  { data: 'Item 1', id: 'A1' },
+  { data: 'Item 2', id: 'A2' },
+  { data: 'Item 3', id: 'A3' },
+  { data: 'Item 4', id: 'A4' }
+])
 </script>
