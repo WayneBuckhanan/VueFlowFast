@@ -1,0 +1,74 @@
+/// <reference path="./.sst/platform/config.d.ts" />
+
+const appName = "vueflowfast-example-cognito"
+const region = "us-east-1"
+
+export default $config({
+  app(input) {
+    return {
+      name: appName,
+      removal: input?.stage === "production" ? "retain" : "remove",
+      home: "aws",
+      providers: {
+        aws: {
+          region: region,
+          //profile: input?.stage === "production" ? "production" : "default",
+        },
+      },
+    }
+  },
+
+  async run() {
+    // !!! Not recommended for production !!!
+    // The UserPool configuration below allows users to create accounts with low security passwords and automatically approves/confirms the accounts.
+    // !!! Not recommended for production !!!
+
+    const userPool = new sst.aws.CognitoUserPool("UserPool", {
+      usernames: ["email"],
+      triggers: {
+        preSignUp: "api/auth.preSignUpApprove",
+      },
+      transform: {
+        userPool: {
+          adminCreateUserConfig: {
+            allowAdminCreateUserOnly: false,
+          },
+          passwordPolicy: {
+            minimumLength: 6,
+            requireUppercase: false,
+            requireSymbols: false,
+          },
+        }
+      },
+    })
+    const userPoolClient = userPool.addClient("UserPoolClient", {})
+    const identityPool = new sst.aws.CognitoIdentityPool("IdentityPool", {
+      userPools: [{
+        userPool: userPool.id,
+        client: userPoolClient.id,
+      }],
+    })
+
+    const environment = {
+      // Vite will only expose VITE_* env vars via import.meta.env.VITE_*
+      VITE_AWS_REGION: region,
+      VITE_USER_POOL_ID: userPool.id,
+      VITE_USER_POOL_CLIENT_ID: userPoolClient.id,
+      VITE_IDENTITY_POOL_ID: identityPool.id,
+      VITE_API_URL: api.url,
+      VITE_USER_POOL_ENDPOINT: userPool.nodes.userPool.endpoint,
+    }
+
+    const site = new sst.aws.StaticSite("FrontEnd", {
+      build: {
+        command: "npm run build",
+        output: "dist"
+      },
+      environment,
+    })
+
+    return {
+      ...environment,
+    }
+  },
+})
