@@ -53,7 +53,7 @@ meta:
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, watchEffect } from 'vue'
 import { createItem, readItem, updateItem, deleteItem, listUserItems, listChildren } from '@/localApi'
 
 interface DemoItem {
@@ -67,10 +67,14 @@ const newItemText = ref('')
 const newChildText = ref('')
 const items = ref<DemoItem[]>([])
 const selectedItem = ref<DemoItem>()
-const children = computed(async () => {
-  if (!selectedItem.value) return []
+const children = ref<DemoItem[]>([])
+watchEffect(async () => {
+  if (!selectedItem.value) {
+    children.value = []
+    return
+  }
   const { items } = await listChildren(selectedItem.value.type, selectedItem.value.id)
-  return items
+  children.value = items as DemoItem[]
 })
 
 async function refreshItems() {
