@@ -134,7 +134,7 @@ async function handleUpdate(item: DemoItem) {
 
 async function handleDelete(item: DemoItem) {
   if (confirm('Delete this item?')) {
-    await deleteItem('demo', item.id)
+    await deleteItem(item.type, item.id)
     await refreshItems()
   }
 }
