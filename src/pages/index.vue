@@ -16,7 +16,7 @@
     Panel(
       toggleable
       unstyled
-      pt="{pcToggleButton: {rounded: true, variant: 'outlined', class: 'float-right'}}"
+      :pt="{pcToggleButton: {rounded: true, variant: 'outlined', class: 'float-right'}}"
       class="bg-slate-200 dark:bg-slate-800"
     ).flex.flex-col.flex-0.w-fit.h-full
       template(#toggleicon="{collapsed}")
