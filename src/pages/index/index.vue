@@ -44,7 +44,25 @@ meta:
             )
     
     Button(@click="refreshItems" label="Refresh List" severity="secondary")
-    .text-lg Selected: {{ selectedItem?.data?.text }}
+    
+    .bg-gray-50.p-4.rounded-lg(v-if="selectedItem")
+      h2.font-bold.mb-2 Selected Item Details
+      .grid.grid-cols-2.gap-2
+        .font-semibold ID:
+        .font-mono {{ selectedItem.id }}
+        .font-semibold Type:
+        .font-mono {{ selectedItem.type }}
+        .font-semibold Parent Type:
+        .font-mono {{ selectedItem.parentType || 'None' }}
+        .font-semibold Parent ID:
+        .font-mono {{ selectedItem.parentId || 'None' }}
+        .font-semibold Text:
+        .font-mono {{ selectedItem.data?.text || 'None' }}
+        .font-semibold Created:
+        .font-mono {{ selectedItem.meta?.createdAt }}
+        .font-semibold Updated:
+        .font-mono {{ selectedItem.meta?.updatedAt }}
+    
     template(v-if="children?.length")
       h3.font-bold.mt-4 Children:
       DataTable(:value="children")
