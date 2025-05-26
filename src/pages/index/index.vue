@@ -7,9 +7,17 @@ meta:
 .m-8.flex-none
   .flex.flex-col.gap-6
     h1.text-3xl CRUDL Demo with Local Storage
-    .flex.gap-3
+    .flex.gap-3.items-end
       InputText(v-model="newItemText" placeholder="New item text")
-      Button(@click="handleCreate" label="Create" severity="success")
+      Button(@click="handleCreate" label="Create Top-Level" severity="success")
+      template(v-if="selectedItem")
+        InputText(v-model="newChildText" placeholder="New child item").ml-2
+        Button(
+          @click="handleCreateChild"
+          label="Create Child"
+          severity="help"
+          :disabled="!selectedItem"
+        )
     
     DataTable(
       :value="items"
@@ -37,6 +45,11 @@ meta:
     
     Button(@click="refreshItems" label="Refresh List" severity="secondary")
     .text-lg Selected: {{ selectedItem?.data?.text }}
+    template(v-if="selectedItem?.children?.length")
+      h3.font-bold.mt-4 Children:
+      DataTable(:value="selectedItem.children")
+        Column(field="id" header="ID")
+        Column(field="data.text" header="Text")
 </template>
 
 <script setup lang="ts">
@@ -51,6 +64,7 @@ interface DemoItem {
 }
 
 const newItemText = ref('')
+const newChildText = ref('')
 const items = ref<DemoItem[]>([])
 const selectedItem = ref<DemoItem>()
 
@@ -67,6 +81,19 @@ async function handleCreate() {
     data: { text: newItemText.value }
   })
   newItemText.value = ''
+  await refreshItems()
+}
+
+async function handleCreateChild() {
+  if (!newChildText.value || !selectedItem.value) return
+  
+  await createItem({
+    type: 'demo-child',
+    data: { text: newChildText.value },
+    parentType: 'demo',
+    parentId: selectedItem.value.id
+  })
+  newChildText.value = ''
   await refreshItems()
 }
 
