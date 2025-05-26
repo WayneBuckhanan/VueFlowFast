@@ -7,6 +7,14 @@ meta:
 .m-8.flex-none
   .flex.flex-col.gap-6
     h1.text-3xl CRUDL Demo with Local Storage
+    .flex.gap-4.items-center
+      .flex.gap-2.items-center
+        RadioButton(v-model="filterType" inputId="filterAll" value="all" name="filter")
+        label(for="filterAll") All
+        RadioButton(v-model="filterType" inputId="filterRoot" value="demo" name="filter")
+        label(for="filterRoot") Root
+        RadioButton(v-model="filterType" inputId="filterChild" value="demo-child" name="filter")
+        label(for="filterChild") Child
     .flex.gap-3.items-end
       InputText(v-model="newItemText" placeholder="New item text")
       Button(@click="handleCreate" label="Create Top-Level" severity="success")
@@ -71,7 +79,7 @@ meta:
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watchEffect } from 'vue'
+import { ref, onMounted, watchEffect, watch } from 'vue'
 import { createItem, readItem, updateItem, deleteItem, listUserItems, listChildren } from '@/localApi'
 
 interface DemoItem {
@@ -82,6 +90,7 @@ interface DemoItem {
 }
 
 const newItemText = ref('')
+const filterType = ref('all')
 const newChildText = ref('')
 const items = ref<DemoItem[]>([])
 const selectedItem = ref<DemoItem>()
@@ -95,10 +104,12 @@ watchEffect(async () => {
   children.value = items as DemoItem[]
 })
 
-async function refreshItems() {
-  const response = await listUserItems()
+async function refreshItems(type = filterType.value) {
+  const response = await listUserItems(type === 'all' ? undefined : type)
   items.value = response.items as DemoItem[]
 }
+
+watch(filterType, () => refreshItems())
 
 async function handleCreate() {
   if (!newItemText.value) return
