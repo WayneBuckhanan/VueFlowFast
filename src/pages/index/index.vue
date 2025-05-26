@@ -7,14 +7,6 @@ meta:
 .m-8.flex-none
   .flex.flex-col.gap-6
     h1.text-3xl CRUDL Demo with Local Storage
-    .flex.gap-4.items-center
-      .flex.gap-2.items-center
-        RadioButton(v-model="filterType" inputId="filterAll" value="all" name="filter")
-        label(for="filterAll") All
-        RadioButton(v-model="filterType" inputId="filterRoot" value="demo" name="filter")
-        label(for="filterRoot") Root
-        RadioButton(v-model="filterType" inputId="filterChild" value="demo-child" name="filter")
-        label(for="filterChild") Child
     .flex.gap-3.items-end
       InputText(v-model="newItemText" placeholder="New item text")
       Button(@click="handleCreate" label="Create Top-Level" severity="success")
@@ -27,6 +19,15 @@ meta:
           :disabled="!selectedItem"
         )
     
+    .flex.gap-4.items-center
+      .flex.gap-2.items-center
+        RadioButton(v-model="filterType" inputId="filterAll" value="all" name="filter")
+        label(for="filterAll") All
+        RadioButton(v-model="filterType" inputId="filterRoot" value="demo" name="filter")
+        label(for="filterRoot") Root
+        RadioButton(v-model="filterType" inputId="filterChild" value="demo-child" name="filter")
+        label(for="filterChild") Child
+
     DataTable(
       :value="items"
       v-model:selection="selectedItem"
