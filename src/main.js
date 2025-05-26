@@ -19,6 +19,7 @@ router.beforeEach((to)=> {
 })
 app.use(router)
 
+// PrimeVue UI toolkit
 import PrimeVue from 'primevue/config'
 //import Theme from '@primeuix/themes/aura'
 import Theme from '@primeuix/themes/lara'
@@ -36,6 +37,15 @@ app.use(PrimeVue, {
     }
   }
 }) 
+
+// Pinia browser store
+import { createPinia } from 'pinia'
+const pinia = createPinia()
+//import { PiniaSharedState } from 'pinia-shared-state'
+//pinia.use( PiniaSharedState )
+import PiniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+pinia.use(PiniaPluginPersistedstate)
+app.use(pinia)
 
 // Our app styles applied after all other packages above
 import './index.css'
