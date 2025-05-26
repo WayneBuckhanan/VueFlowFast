@@ -117,7 +117,7 @@ async function handleCreateChild() {
   await createItem({
     type: 'demo-child',
     data: { text: newChildText.value },
-    parentType: 'demo',
+    parentType: selectedItem.value.type || 'demo',
     parentId: selectedItem.value.id
   })
   newChildText.value = ''
