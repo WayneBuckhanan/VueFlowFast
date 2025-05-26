@@ -45,16 +45,16 @@ meta:
     
     Button(@click="refreshItems" label="Refresh List" severity="secondary")
     .text-lg Selected: {{ selectedItem?.data?.text }}
-    template(v-if="selectedItem?.children?.length")
+    template(v-if="children?.length")
       h3.font-bold.mt-4 Children:
-      DataTable(:value="selectedItem.children")
+      DataTable(:value="children")
         Column(field="id" header="ID")
         Column(field="data.text" header="Text")
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { createItem, readItem, updateItem, deleteItem, listUserItems } from '@/localApi'
+import { ref, onMounted, computed } from 'vue'
+import { createItem, readItem, updateItem, deleteItem, listUserItems, listChildren } from '@/localApi'
 
 interface DemoItem {
   id: string
@@ -67,6 +67,11 @@ const newItemText = ref('')
 const newChildText = ref('')
 const items = ref<DemoItem[]>([])
 const selectedItem = ref<DemoItem>()
+const children = computed(async () => {
+  if (!selectedItem.value) return []
+  const { items } = await listChildren(selectedItem.value.type, selectedItem.value.id)
+  return items
+})
 
 async function refreshItems() {
   const response = await listUserItems()
