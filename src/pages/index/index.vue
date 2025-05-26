@@ -45,7 +45,7 @@ meta:
     
     Button(@click="refreshItems" label="Refresh List" severity="secondary")
     
-    .bg-gray-50.p-4.rounded-lg(v-if="selectedItem")
+    .p-4.rounded-lg(v-if="selectedItem")
       h2.font-bold.mb-2 Selected Item Details
       .grid.grid-cols-2.gap-2
         .font-semibold ID:
