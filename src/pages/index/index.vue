@@ -139,7 +139,7 @@ async function handleCreateChild() {
 async function handleUpdate(item: DemoItem) {
   const newText = prompt('Edit text:', item.data.text)
   if (newText !== null) {
-    await updateItem('demo', item.id, { text: newText })
+    await updateItem(item.type, item.id, { text: newText })
     await refreshItems()
   }
 }
