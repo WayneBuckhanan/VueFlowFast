@@ -69,7 +69,7 @@ const items = ref<DemoItem[]>([])
 const selectedItem = ref<DemoItem>()
 
 async function refreshItems() {
-  const response = await listUserItems('demo')
+  const response = await listUserItems()
   items.value = response.items as DemoItem[]
 }
 
