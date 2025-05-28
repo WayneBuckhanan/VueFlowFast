@@ -17,7 +17,7 @@ Inspired by the Vitesse repos, this is a baseline repo to clone as a start for a
 
 ## How to Use
 
-Assuming you have [git](https://git-scm.com) and [Node](https:/nodejs.org) v20 or later installed on your system, run:
+Assuming you have [git](https://git-scm.com) and [Node](https://nodejs.org) v20 or later installed on your system, run:
 
 ```bash
 git clone https://github.com/WayneBuckhanan/VueFlowFast <your-project-name>
