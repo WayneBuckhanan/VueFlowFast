@@ -1,5 +1,5 @@
-import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import { defineStore } from 'pinia';
 import * as API from '../localApi';
 
 function generateStorageKey(type: string, id: string): string {
@@ -7,7 +7,7 @@ function generateStorageKey(type: string, id: string): string {
 }
 
 export const useLocalItemsStore = defineStore('localItems', () => {
-  const items = ref(new Map<string, Item>());
+  const items = ref(new Map<string, API.Item>());
 
   async function createItem(item: Partial<API.BaseItem>): Promise<API.BaseItem> {
       const itemId = item.id || crypto.randomUUID();
@@ -25,7 +25,7 @@ export const useLocalItemsStore = defineStore('localItems', () => {
         version: 1,
       };
 
-      const newItem: Item = {
+      const newItem: API.Item = {
         type: itemType,
         id: itemId,
         parentType: itemParentType,
@@ -43,7 +43,7 @@ export const useLocalItemsStore = defineStore('localItems', () => {
       }
 
       items.value.set(storageKey, newItem);
-      return { items: [newItem] };
+      return newItem;
     }
 
     async function readItem(type: string, id: string): Promise<API.BaseItem> {
@@ -67,7 +67,7 @@ export const useLocalItemsStore = defineStore('localItems', () => {
 
       const currentMeta = existingItem.meta || { createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), version: 0 };
 
-      const newMeta: ItemMeta = {
+      const newMeta: API.ItemMeta = {
         ...currentMeta,
         updatedAt: new Date().toISOString(),
         version: currentMeta.version + 1,
@@ -80,7 +80,7 @@ export const useLocalItemsStore = defineStore('localItems', () => {
       };
 
       items.value.set(storageKey, updatedItem);
-      return { items: [updatedItem] };
+      return updatedItem;
     }
 
     async function deleteItem(type: string, id: string): Promise<void> {
@@ -101,7 +101,7 @@ export const useLocalItemsStore = defineStore('localItems', () => {
       const limit = options?.limit || 50;
       const startIndex = options?.nextCursor ? parseInt(options.nextCursor, 10) : 0;
 
-      const allMatchingChildren: Item[] = [];
+      const allMatchingChildren: API.Item[] = [];
       for (const item of items.value.values()) {
         if (item.parentType === parentType && item.parentId === parentId) {
           if (childType && childType !== 'all' && item.type !== childType) {
@@ -129,9 +129,9 @@ export const useLocalItemsStore = defineStore('localItems', () => {
       const startIndex = options?.nextCursor ? parseInt(options.nextCursor, 0) : 0;
 
       // Get all items from the store
-      let allItemsInStore: Item[] = Array.from(items.value.values());
+      let allItemsInStore: API.Item[] = Array.from(items.value.values());
 
-      let filteredItems: Item[];
+      let filteredItems: API.Item[];
       if (type && type !== 'all') {
         // Filter by type if provided and not 'all'
         filteredItems = allItemsInStore.filter(item => item.type === type);
