@@ -18,12 +18,4 @@ const count = ref(0)
 function increment() {
   count.value = (count.value+1)%4
 }
-
-const selectedItems = ref([])
-const items = ref([
-  { data: 'Item 1', id: 'A1' },
-  { data: 'Item 2', id: 'A2' },
-  { data: 'Item 3', id: 'A3' },
-  { data: 'Item 4', id: 'A4' }
-])
 </script>
