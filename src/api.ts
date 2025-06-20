@@ -49,57 +49,53 @@ export interface ItemMeta {
 }
 
 export interface BaseItem {
-  type: string // sk <=> TYPE#id or TYPE
-  id?: string
-  parentType?: string // pk <=> parentType#parentId or USER#userId
+  type: string
+  id: string
+  parentType?: string
   parentId?: string
   data?: ItemData
   meta?: ItemMeta
-  user?: string // Cognito user sub
+  user?: string // User identifier
 }
 
-export interface ItemResponse {
+export interface QueryResponse {
   items: BaseItem[]
-}
-
-export interface QueryResponse extends ItemResponse {
-  nextCursor?: string
+  nextOffset: number
 }
 
 /*
-| POST   /api/v1/{type}                              | Partial<BaseItem> | 201 ItemResponse  | Create new item |
-| GET    /api/v1/{type}/{id}                         | N/A               | 200 ItemResponse  | Get single item by type and ID |
-| PUT    /api/v1/{type}/{id}                         | ItemData          | 200 ItemResponse  | Update existing item |
-| DELETE /api/v1/{type}/{id}                         | N/A               | 200 <Dynamo ret>  | Delete item |
+| POST   /api/v1/{type}                              | Partial<BaseItem> | 201 BaseItem      | Create new item |
+| GET    /api/v1/{type}/{id}                         | N/A               | 200 BaseItem      | Get single item by type and ID |
+| PUT    /api/v1/{type}/{id}                         | ItemData          | 200 BaseItem      | Update existing item |
+| DELETE /api/v1/{type}/{id}                         | N/A               | 200 <empty>       | Delete item |
 | GET    /api/v1/{parentType}/{parentId}/{childType} | N/A               | 200 QueryResponse | Get children of specific type (or 'all') for parent, pagination via ?limit&nextCursor |
 | GET    /api/v1/user/{type}                         | N/A               | 200 QueryResponse | Get items of type (or 'all') for current user, pagination via ?limit&nextCursor |
 */
 
 export const api = {
   async createItem(item: Partial<BaseItem>): Promise<BaseItem> {
-    return post(`/api/v1/${item?.type}`, item)
+    return await post(`/api/v1/${item?.type}`, item)
   },
 
   async getItem(type: string, id: string): Promise<BaseItem> {
-    return get(`/api/v1/${type}/${id}`)
+    return await get(`/api/v1/${type}/${id}`)
   },
 
   async updateItem(type: string, id: string, data: ItemData): Promise<BaseItem> {
-    return put(`/api/v1/${type}/${id}`, data)
+    return await put(`/api/v1/${type}/${id}`, data)
   },
 
   async deleteItem(type: string, id: string): Promise<void> {
     return del(`/api/v1/${type}/${id}`)
   },
 
-  // TODO add pagination via ?limit&nextCursor // TODO use infinite query?
+  // TODO add pagination via ?limit&nextOffset // TODO use infinite query?
   async getChildren(parentType: string, parentId: string, childType='all'): Promise<QueryResponse> {
     return get(`/api/v1/${parentType}/${parentId}/${childType}`)
   },
 
-  // TODO add pagination via ?limit&nextCursor // TODO use infinite query?
+  // TODO add pagination via ?limit&nextOffset // TODO use infinite query?
   async getUserData(type='all'): Promise<QueryResponse> {
     return get(`/api/v1/user/${type}`)
   },
 }
-

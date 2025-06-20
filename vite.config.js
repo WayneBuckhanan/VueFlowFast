@@ -8,6 +8,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { PrimeVueResolver } from '@primevue/auto-import-resolver'
 import TailwindCSS from '@tailwindcss/vite'
+import { cloudflare } from '@cloudflare/vite-plugin'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -26,6 +27,7 @@ export default defineConfig({
     }),
     // ⚠️  VueRouter() must be placed before Vue
     Vue(),
+    cloudflare(),
     TailwindCSS(),
     Components({
       resolvers: [
@@ -45,7 +47,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    open: true,
+    //open: true,
   },
   build: {
     chunkSizeWarningLimit: 650,
