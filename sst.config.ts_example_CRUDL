@@ -1,0 +1,150 @@
+/// <reference path="./.sst/platform/config.d.ts" />
+
+/*
+
+Integrate the generic CRUDL interface on top of the Cognito by adding the packages used on the server-side and using the helpers in `src/api.ts`.
+
+`npm install @aws-sdk/client-dynamodb @aws-sdk/util-dynamodb`
+
+```js
+// Vue Composition API
+<script setup>
+import { api } from '@/api'
+
+async ()=> {
+  const response = await api.getUserData('demo')
+  const items = response?.items || []
+}
+</script>
+```
+
+*/
+
+const appName = "vueflowfast-example-crudl"
+const region = "us-east-1"
+
+export default $config({
+  app(input) {
+    return {
+      name: appName,
+      removal: input?.stage === "production" ? "retain" : "remove",
+      home: "aws",
+      providers: {
+        aws: {
+          region: region,
+          //profile: input?.stage === "production" ? "production" : "default",
+        },
+      },
+    }
+  },
+
+  async run() {
+    // !!! Not recommended for production !!!
+    // The UserPool configuration below allows users to create accounts with low security passwords and automatically approves/confirms the accounts.
+    // !!! Not recommended for production !!!
+
+    const userPool = new sst.aws.CognitoUserPool("UserPool", {
+      usernames: ["email"],
+      triggers: {
+        preSignUp: "api/auth.preSignUpApprove",
+      },
+      transform: {
+        userPool: {
+          adminCreateUserConfig: {
+            allowAdminCreateUserOnly: false,
+          },
+          passwordPolicy: {
+            minimumLength: 6,
+            requireUppercase: false,
+            requireSymbols: false,
+          },
+        }
+      },
+    })
+    const userPoolClient = userPool.addClient("UserPoolClient", {})
+    const identityPool = new sst.aws.CognitoIdentityPool("IdentityPool", {
+      userPools: [{
+        userPool: userPool.id,
+        client: userPoolClient.id,
+      }],
+    })
+
+    const data = new sst.aws.Dynamo("Data", {
+      fields: {
+        pk: "string",
+        sk: "string",
+        user: "string",
+      },
+      primaryIndex: { hashKey: "pk", rangeKey: "sk" },
+      globalIndexes: {
+        SKPK: { hashKey: "sk", rangeKey: "pk" },
+        USER: { hashKey: "user", rangeKey: "sk" },
+      },
+    })
+
+    const api = new sst.aws.ApiGatewayV2("API", {})
+    const audiences = [userPoolClient.id] // valid JWT must provide an "aud" that matches at least one entry in this list
+    const issuer = $interpolate`https://${userPool.nodes.userPool.endpoint}`
+    const authorizer = api.addAuthorizer({
+      name: "CognitoAuth",
+      jwt: { audiences, issuer },
+    })
+    const auth = { jwt: { authorizer: authorizer.id } }
+
+/*
+| POST   /api/v1/{type}                              | handleCreateItem    |
+| GET    /api/v1/{type}/{id}                         | handleReadItem       |
+| PUT    /api/v1/{type}/{id}                         | handleUpdateItem    |
+| DELETE /api/v1/{type}/{id}                         | handleDeleteItem    |
+| GET    /api/v1/{parentType}/{parentId}/{childType} | handleListChildren   |
+| GET    /api/v1/user/{type}                         | handleListUserItems  |
+*/
+
+    api.route("POST /api/v1/{type}", {
+      handler: "api/items.handleCreateItem",
+      link: [data],
+    }, { auth })
+    api.route("GET /api/v1/{type}/{id}", {
+      handler: "api/items.handleReadItem",
+      link: [data],
+    }, { auth })
+    api.route("PUT /api/v1/{type}/{id}", {
+      handler: "api/items.handleUpdateItem",
+      link: [data],
+    }, { auth })
+    api.route("DELETE /api/v1/{type}/{id}", {
+      handler: "api/items.handleDeleteItem",
+      link: [data],
+    }, { auth })
+    api.route("GET /api/v1/{parentType}/{parentId}/{childType}", {
+      handler: "api/items.handleListChildren",
+      link: [data],
+    }, { auth })
+    api.route("GET /api/v1/user/{type}", {
+      handler: "api/items.handleListUserItems",
+      link: [data],
+    }, { auth })
+
+    const environment = {
+      // Vite will only expose VITE_* env vars via import.meta.env.VITE_*
+      VITE_AWS_REGION: region,
+      VITE_USER_POOL_ID: userPool.id,
+      VITE_USER_POOL_ENDPOINT: userPool.nodes.userPool.endpoint,
+      VITE_USER_POOL_CLIENT_ID: userPoolClient.id,
+      VITE_IDENTITY_POOL_ID: identityPool.id,
+      VITE_API_URL: api.url,
+    }
+
+    const site = new sst.aws.StaticSite("FrontEnd", {
+      build: {
+        command: "npm run build",
+        output: "dist"
+      },
+      environment,
+    })
+
+    return {
+      ...environment,
+    }
+  },
+})
