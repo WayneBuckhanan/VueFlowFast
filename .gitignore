@@ -1,3 +1,5 @@
+.env*
+
 # Logs
 logs
 *.log
@@ -26,5 +28,7 @@ coverage
 *.njsproj
 *.sln
 *.sw?
+.aider*
 
 *.tsbuildinfo
+.sst

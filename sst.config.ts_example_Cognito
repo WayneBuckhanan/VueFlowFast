@@ -1,5 +1,45 @@
 /// <reference path="./.sst/platform/config.d.ts" />
 
+/*
+
+Integrate the Cognito User Pool, User Pool Client, and Identity Pool with the frontend, then you can use the AWS Amplify UI library and ignore the server aspects.
+
+`npm install aws-amplify @aws-amplify/ui-vue`
+
+Incorporate this into the `src/main.js` before the app styles and mount:
+
+```js
+import { Amplify } from "aws-amplify";
+import "@aws-amplify/ui-vue/styles.css"
+const amplifyconfig = {
+  Auth: {
+    Cognito: {
+      userPoolId: import.meta.env.VITE_APP_USER_POOL_ID,
+      userPoolClientId: import.meta.env.VITE_APP_USER_POOL_CLIENT_ID,
+      loginWith: {
+        email: true,
+      },
+      passwordFormat: {
+        requireUppercase: false,
+        requireSpecialCharacters: false,
+      },
+    },
+  },
+  API: {
+    REST: {
+      "default": {
+        endpoint: import.meta.env.VITE_APP_API_URL,
+        region: import.meta.env.VITE_APP_REGION,
+      },
+    },
+  },
+}
+console.log("Amplify config", amplifyconfig)
+Amplify.configure(amplifyconfig)
+```
+
+*/
+
 const appName = "vueflowfast-example-cognito"
 const region = "us-east-1"
 
