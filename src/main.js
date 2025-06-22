@@ -4,6 +4,11 @@ import { createApp } from 'vue'
 import App from './App.vue'
 const app = createApp(App)
 
+// Pinia store
+import { createPinia } from 'pinia'
+const pinia = createPinia()
+app.use(pinia)
+
 // Vue Router with unplugin-vue-router config
 import { createRouter, createWebHistory } from 'vue-router'
 import { routes, handleHotUpdate } from 'vue-router/auto-routes'
@@ -35,8 +40,21 @@ app.use(PrimeVue, {
       }
     }
   }
-}) 
+})
+
+// Toast service for notifications
+import ToastService from 'primevue/toastservice'
+app.use(ToastService)
 
 // Our app styles applied after all other packages above
 import './index.css'
+
+// Initialize auth store on app startup
+import { useAuthStore } from './stores/auth'
 app.mount('#app')
+
+// Initialize authentication state after app is mounted
+const authStore = useAuthStore()
+authStore.initialize().catch(error => {
+  console.warn('Failed to initialize auth state:', error)
+})

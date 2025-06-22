@@ -35,7 +35,7 @@ export const createApiRouter = () => {
   api.use('*', prettyJSON())
 
   // Authentication middleware for all API routes except health check
-  api.use('/api/v1/*', optionalAuthMiddleware)
+  api.use('/*', optionalAuthMiddleware)
 
   // Error handling
   api.onError(errorHandler)
@@ -46,15 +46,17 @@ export const createApiRouter = () => {
 
   // API v1 routes - maintaining exact compatibility with AWS implementation
   
-  // Primary CRUDL endpoints
-  api.post('/api/v1/:type', handleCreateItem)
-  api.get('/api/v1/:type/:id', handleReadItem)
-  api.put('/api/v1/:type/:id', handleUpdateItem)
-  api.delete('/api/v1/:type/:id', handleDeleteItem)
+  // User-specific endpoints (must come first to avoid conflicts)
+  api.get('/user/:type', handleListUserItems)
   
-  // Hierarchical and user-specific endpoints
-  api.get('/api/v1/:parentType/:parentId/:childType', handleListChildren)
-  api.get('/api/v1/user/:type', handleListUserItems)
+  // Primary CRUDL endpoints
+  api.post('/:type', handleCreateItem)
+  api.get('/:type/:id', handleReadItem)
+  api.put('/:type/:id', handleUpdateItem)
+  api.delete('/:type/:id', handleDeleteItem)
+  
+  // Hierarchical endpoints
+  api.get('/:parentType/:parentId/:childType', handleListChildren)
 
   // Catch-all for undefined routes
   api.all('*', (c) => {

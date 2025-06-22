@@ -1,34 +1,72 @@
 // src/api.ts
-import * as AWS from 'aws-amplify/api'
-import { fetchAuthSession } from 'aws-amplify/auth'
-const config = { apiName: 'default', }
-
 export const apiCall = async (method: string, path: string, data?: any) => {
-  const session = await fetchAuthSession()
-  const token = session?.tokens?.idToken || ''
-  const headers = {}
-  if (token) {
-    headers['Authorization'] = token.toString()
-    headers['Content-Type'] = 'application/json'
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
   }
-  const options = { ...data, headers }
-  console.log("apiCall", method, path, token, options)
+
+  const options: RequestInit = {
+    method: method.toUpperCase(),
+    headers,
+    credentials: 'include', // Include session cookies
+  }
+
+  if (data && (method.toLowerCase() === 'post' || method.toLowerCase() === 'put')) {
+    options.body = JSON.stringify(data)
+  }
+
+  console.log("apiCall", method, path, options)
+  
   try {
-    const response = await AWS[method]({ apiName: config.apiName, path, options }).response
-    if(response.statusCode === 204) return response // 204 No Content (so no body) but may have something in response.headers worth seeing
-    const jsonResponse = response.body.json()
-    //console.log("jsonResponse", jsonResponse)
-    return jsonResponse
+    const response = await fetch(path, options)
+    
+    // Handle authentication errors
+    if (response.status === 401) {
+      // Clear any cached auth state and redirect to login
+      throw new ApiError(401, 'Authentication required')
+    }
+    
+    if (response.status === 403) {
+      throw new ApiError(403, 'Access forbidden')
+    }
+    
+    if (!response.ok) {
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+      try {
+        const errorData = await response.json()
+        if (errorData.error) {
+          errorMessage = errorData.error
+        }
+      } catch {
+        // If we can't parse error JSON, use the default message
+      }
+      throw new ApiError(response.status, errorMessage)
+    }
+
+    // Handle 204 No Content
+    if (response.status === 204) {
+      return null
+    }
+
+    // Try to parse JSON response
+    const contentType = response.headers.get('content-type')
+    if (contentType && contentType.includes('application/json')) {
+      const jsonResponse = await response.json()
+      console.log("jsonResponse", jsonResponse)
+      return jsonResponse
+    }
+
+    // Return response text for non-JSON responses
+    return await response.text()
   } catch (error) {
-    console.error(`AWS ${method} failed:`, error)
-    //if(error.response?.status !== 404) 
+    console.error(`API ${method} failed:`, error)
     throw error
   }
-};
+}
+
 export const get  = (path: string) => apiCall('get', path)
-export const del  = (path: string) => apiCall('del', path)
-export const post = (path: string, data: any) => apiCall('post', path, { body: data })
-export const put  = (path: string, data: any) => apiCall('put',  path, { body: data })
+export const del  = (path: string) => apiCall('delete', path)
+export const post = (path: string, data: any) => apiCall('post', path, data)
+export const put  = (path: string, data: any) => apiCall('put', path, data)
 
 
 export class ApiError extends Error {

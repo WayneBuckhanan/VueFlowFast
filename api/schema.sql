@@ -54,6 +54,53 @@ END;
 -- createdAt/updatedAt: Separate timestamp columns for efficient querying
 -- version: Version number for optimistic locking
 
+-- Authentication tables for OpenAuth integration
+
+-- Users table for storing user information
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  name TEXT,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  lastLoginAt DATETIME
+);
+
+-- User sessions table for managing authentication sessions
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id TEXT PRIMARY KEY,
+  userId TEXT NOT NULL,
+  token TEXT NOT NULL,
+  expiresAt DATETIME NOT NULL,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Verification codes table for email-based authentication
+CREATE TABLE IF NOT EXISTS verification_codes (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  code TEXT NOT NULL,
+  expiresAt DATETIME NOT NULL,
+  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+  used BOOLEAN DEFAULT FALSE
+);
+
+-- Indexes for authentication tables
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON user_sessions(token);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON user_sessions(userId);
+CREATE INDEX IF NOT EXISTS idx_verification_email ON verification_codes(email);
+CREATE INDEX IF NOT EXISTS idx_verification_code ON verification_codes(code);
+
+-- Trigger to update users updatedAt timestamp
+CREATE TRIGGER IF NOT EXISTS update_users_timestamp
+  AFTER UPDATE ON users
+  FOR EACH ROW
+BEGIN
+  UPDATE users SET updatedAt = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
 -- Example records:
 -- type="project", id="proj1", parentType="user", parentId="user123", data='{"name":"My Project"}', user="user123"
 -- type="task", id="task1", parentType="project", parentId="proj1", data='{"title":"Task 1"}', user="user123"
