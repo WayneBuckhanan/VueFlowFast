@@ -42,6 +42,7 @@ export interface AuthResult {
 export class AuthService {
   private db: D1Database
   private emailService: EmailService
+  private static codeCounter = 0
 
   constructor(db: D1Database, emailService: EmailService) {
     this.db = db
@@ -51,8 +52,70 @@ export class AuthService {
   /**
    * Generate a 6-digit verification code
    */
-  generateVerificationCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString()
+  async generateVerificationCode(email: string): Promise<string> {
+    let code: string
+    let attempts = 0
+    const maxAttempts = 100
+    
+    // Increment global counter for uniqueness
+    AuthService.codeCounter = (AuthService.codeCounter + 1) % 1000000
+    
+    do {
+      // Use multiple sources of entropy for maximum randomness
+      const randomArray = new Uint32Array(4)
+      crypto.getRandomValues(randomArray)
+      
+      // Create a unique seed combining multiple entropy sources
+      const timestamp = Date.now()
+      const performanceNow = performance.now()
+      const emailHash = this.simpleHash(email + timestamp + AuthService.codeCounter)
+      
+      // Combine all entropy sources with XOR and addition for better distribution
+      const entropy = randomArray[0] ^ randomArray[1] ^ randomArray[2] ^ randomArray[3]
+      const seed = entropy + Math.floor(performanceNow * 1000) + emailHash + attempts + AuthService.codeCounter
+      
+      // Use a more robust modulo operation to ensure 6-digit range
+      code = (Math.abs(seed) % 900000 + 100000).toString()
+      attempts++
+      
+      // Check if this code already exists for this email
+      const existingCode = await this.db.prepare(`
+        SELECT id FROM verification_codes
+        WHERE email = ? AND code = ?
+        LIMIT 1
+      `).bind(email, code).first()
+      
+      if (!existingCode) {
+        break // Code is unique for this email
+      }
+      
+      // Add a small random delay to prevent timing attacks and ensure entropy changes
+      const delay = Math.floor(Math.random() * 5) + 1
+      await new Promise(resolve => setTimeout(resolve, delay))
+    } while (attempts < maxAttempts)
+    
+    if (attempts >= maxAttempts) {
+      // Final fallback: use UUID hash with additional entropy
+      const uuid1 = crypto.randomUUID().replace(/-/g, '')
+      const uuid2 = crypto.randomUUID().replace(/-/g, '')
+      const hash = parseInt(uuid1.substring(0, 8), 16) ^ parseInt(uuid2.substring(0, 8), 16) ^ AuthService.codeCounter
+      code = (Math.abs(hash) % 900000 + 100000).toString()
+    }
+    
+    return code
+  }
+
+  /**
+   * Simple hash function for additional entropy
+   */
+  private simpleHash(str: string): number {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32-bit integer
+    }
+    return Math.abs(hash)
   }
 
   /**
@@ -67,20 +130,31 @@ export class AuthService {
    */
   async sendVerificationCode(email: string): Promise<{ success: boolean; error?: string }> {
     try {
-      // Clean up expired codes for this email
-      await this.cleanupExpiredCodes(email)
-
+      const normalizedEmail = email.toLowerCase()
+      
       // Generate new verification code
-      const code = this.generateVerificationCode()
+      const code = await this.generateVerificationCode(normalizedEmail)
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+      const createdAt = new Date().toISOString()
       const id = crypto.randomUUID()
+      
+      // Use a transaction to ensure atomicity - mark existing codes as used and insert new code
+      const batch = [
+        // First mark all existing codes for this email as used
+        this.db.prepare(`
+          UPDATE verification_codes
+          SET used = 1
+          WHERE email = ? AND used = 0
+        `).bind(normalizedEmail),
+        
+        // Then insert the new verification code
+        this.db.prepare(`
+          INSERT INTO verification_codes (id, email, code, expiresAt, createdAt, used)
+          VALUES (?, ?, ?, ?, ?, 0)
+        `).bind(id, normalizedEmail, code, expiresAt.toISOString(), createdAt)
+      ]
 
-      // Store verification code in database
-      const stmt = this.db.prepare(`
-        INSERT INTO verification_codes (id, email, code, expiresAt)
-        VALUES (?, ?, ?, ?)
-      `)
-      await stmt.bind(id, email.toLowerCase(), code, expiresAt.toISOString()).run()
+      await this.db.batch(batch)
 
       // Send email
       const emailSent = await this.emailService.sendVerificationCode(email, code)
@@ -92,6 +166,51 @@ export class AuthService {
       return { success: true }
     } catch (error) {
       console.error('Error sending verification code:', error)
+      return { success: false, error: 'Internal server error' }
+    }
+  }
+
+  /**
+   * Verify code (without creating session)
+   */
+  async verifyCode(email: string, code: string): Promise<AuthResult> {
+    try {
+      const normalizedEmail = email.toLowerCase()
+
+      // Find valid verification code
+      const codeStmt = this.db.prepare(`
+        SELECT * FROM verification_codes
+        WHERE email = ? AND code = ? AND used = FALSE AND expiresAt > datetime('now')
+        ORDER BY createdAt DESC
+        LIMIT 1
+      `)
+      const verificationRecord = await codeStmt.bind(normalizedEmail, code).first()
+
+      if (!verificationRecord) {
+        return { success: false, error: 'Invalid or expired verification code' }
+      }
+
+      // Mark code as used
+      const markUsedStmt = this.db.prepare(`
+        UPDATE verification_codes SET used = TRUE WHERE id = ?
+      `)
+      await markUsedStmt.bind(verificationRecord.id).run()
+
+      // Find or create user
+      let user = await this.findUserByEmail(normalizedEmail)
+      if (!user) {
+        user = await this.createUser(normalizedEmail)
+      } else {
+        // Update last login time
+        await this.updateUserLastLogin(user.id)
+      }
+
+      return {
+        success: true,
+        user
+      }
+    } catch (error) {
+      console.error('Error verifying code:', error)
       return { success: false, error: 'Internal server error' }
     }
   }
@@ -150,21 +269,27 @@ export class AuthService {
   /**
    * Validate session token and get user
    */
-  async validateSession(token: string): Promise<User | null> {
+  async validateSession(token: string): Promise<{valid: boolean, user?: User, session?: UserSession, error?: string}> {
     try {
       const stmt = this.db.prepare(`
-        SELECT u.*, s.expiresAt as sessionExpiresAt
+        SELECT u.*, s.id as sessionId, s.token, s.expiresAt, s.createdAt as sessionCreatedAt
         FROM users u
         JOIN user_sessions s ON u.id = s.userId
-        WHERE s.token = ? AND s.expiresAt > datetime('now')
+        WHERE s.token = ?
       `)
       const result = await stmt.bind(token).first()
 
       if (!result) {
-        return null
+        return { valid: false, error: 'Invalid session' }
       }
 
-      return {
+      // Explicitly check expiration
+      const expiresAt = new Date(result.expiresAt)
+      if (expiresAt < new Date()) {
+        return { valid: false, error: 'Session expired' }
+      }
+
+      const user = {
         id: result.id,
         email: result.email,
         name: result.name,
@@ -172,25 +297,46 @@ export class AuthService {
         updatedAt: result.updatedAt,
         lastLoginAt: result.lastLoginAt
       }
+
+      const session = {
+        id: result.sessionId,
+        userId: result.id,
+        token: result.token,
+        expiresAt: result.expiresAt,
+        createdAt: result.sessionCreatedAt
+      }
+
+      return { valid: true, user, session }
     } catch (error) {
       console.error('Error validating session:', error)
-      return null
+      return { valid: false, error: 'Internal server error' }
     }
   }
 
   /**
    * Logout user by invalidating session
    */
-  async logout(token: string): Promise<boolean> {
+  async logout(token: string): Promise<AuthResult | undefined> {
     try {
-      const stmt = this.db.prepare(`
+      // First check if session exists
+      const sessionStmt = this.db.prepare(`
+        SELECT 1 FROM user_sessions WHERE token = ?
+      `)
+      const sessionExists = await sessionStmt.bind(token).first()
+      
+      if (!sessionExists) {
+        return undefined
+      }
+
+      // Delete the session
+      const deleteStmt = this.db.prepare(`
         DELETE FROM user_sessions WHERE token = ?
       `)
-      await stmt.bind(token).run()
-      return true
+      await deleteStmt.bind(token).run()
+      return { success: true }
     } catch (error) {
       console.error('Error logging out:', error)
-      return false
+      return { success: false, error: 'Internal server error' }
     }
   }
 
@@ -285,11 +431,20 @@ export class AuthService {
    * Clean up expired verification codes for an email
    */
   private async cleanupExpiredCodes(email: string): Promise<void> {
-    const stmt = this.db.prepare(`
-      DELETE FROM verification_codes 
-      WHERE email = ? AND (expiresAt < datetime('now') OR used = TRUE)
+    // Mark all existing codes for this email as used (invalidate them)
+    const markUsedStmt = this.db.prepare(`
+      UPDATE verification_codes
+      SET used = 1
+      WHERE email = ? AND used = 0
     `)
-    await stmt.bind(email).run()
+    await markUsedStmt.bind(email).run()
+    
+    // Only delete expired codes, keep used codes for testing/auditing
+    const deleteStmt = this.db.prepare(`
+      DELETE FROM verification_codes
+      WHERE email = ? AND expiresAt < datetime('now')
+    `)
+    await deleteStmt.bind(email).run()
   }
 
   /**

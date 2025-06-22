@@ -17,12 +17,15 @@ import { ApiError } from '../types/api'
 
 // Transform database row to API format
 export function transformDbItem(dbItem: DbItem): BaseItem {
-  let data = {}
+  let data = null
   
-  try {
-    data = dbItem.data ? JSON.parse(dbItem.data) : {}
-  } catch (e) {
-    console.warn('Failed to parse item data:', e)
+  if (dbItem.data !== null && dbItem.data !== undefined && dbItem.data !== '') {
+    try {
+      data = JSON.parse(dbItem.data)
+    } catch (e) {
+      console.warn('Failed to parse item data:', e)
+      data = null
+    }
   }
 
   const meta: ItemMeta = {
@@ -51,13 +54,16 @@ export class DatabaseService {
     type: string,
     options?: CreateItemOptions
   ): Promise<BaseItem> {
-    const { data, userId = 'not-logged-in' } = options || {}
-    let { id, parentType, parentId } = options || {}
+    if (!options?.userId) {
+      throw new ApiError(400, 'User ID is required')
+    }
+    const { userId } = options
+    let { id, parentType, parentId, data } = options
 
     if (!id) {
       id = uuidv4()
     }
-    if (!options?.parentType || !options?.parentId) {
+    if (!parentType || !parentId) {
       parentType = 'user'
       parentId = userId
     }
@@ -73,7 +79,7 @@ export class DatabaseService {
         id,
         parentType,
         parentId,
-        JSON.stringify(data || {}),
+        data !== null && data !== undefined ? JSON.stringify(data) : null,
         userId
       ).run()
 
@@ -82,6 +88,13 @@ export class DatabaseService {
       return createdItem
     } catch (error) {
       console.error('Database create error:', error)
+      
+      // Handle constraint violations as client errors (400)
+      if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
+        throw new ApiError(400, 'Item with this ID already exists', 'DUPLICATE_ID')
+      }
+      
+      // Handle other database errors as server errors (500)
       throw new ApiError(500, 'Failed to create item')
     }
   }
@@ -158,21 +171,47 @@ export class DatabaseService {
 
   // Delete item
   async deleteItem(type: string, id: string, userId?: string): Promise<void> {
-    const stmt = this.db.prepare(`
-      DELETE FROM items 
-      WHERE type = ? AND id = ?
-    `)
-
     try {
-      const result = await stmt.bind(type, id).run()
-      if (result.meta.rows_written === 0) {
+      // First verify item exists and belongs to user if userId provided
+      const existing = await this.readItem(type, id)
+      if (userId && existing.user !== userId) {
         throw new ApiError(404, 'Item not found')
       }
+
+      // Recursively delete all children first
+      await this.deleteItemAndChildren(type, id)
+
     } catch (error) {
       if (error instanceof ApiError) {
         throw error
       }
       console.error('Database delete error:', error)
+      throw new ApiError(500, 'Failed to delete item')
+    }
+  }
+
+  // Helper method to recursively delete item and all its children
+  private async deleteItemAndChildren(type: string, id: string): Promise<void> {
+    // First, find all direct children
+    const childrenQuery = `
+      SELECT type, id FROM items
+      WHERE parentType = ? AND parentId = ?
+    `
+    const childrenResult = await this.db.prepare(childrenQuery).bind(type, id).all<{type: string, id: string}>()
+    const children = childrenResult.results || []
+
+    // Recursively delete each child and their children
+    for (const child of children) {
+      await this.deleteItemAndChildren(child.type, child.id)
+    }
+
+    // Finally, delete the item itself
+    const deleteResult = await this.db.prepare(`
+      DELETE FROM items
+      WHERE type = ? AND id = ?
+    `).bind(type, id).run()
+
+    if (!deleteResult.success) {
       throw new ApiError(500, 'Failed to delete item')
     }
   }

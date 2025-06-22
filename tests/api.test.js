@@ -4,34 +4,59 @@ import { createTestUser, createTestSession, createTestItem, createAuthHeaders, m
 import { env } from "cloudflare:test"
 
 // Import the API handlers
-import { 
-  handleCreateItem, 
-  handleReadItem, 
-  handleUpdateItem, 
+import {
+  handleCreateItem,
+  handleReadItem,
+  handleUpdateItem,
   handleDeleteItem,
   handleListChildren,
   handleListUserItems,
   handleHealthCheck
 } from '../api/handlers/items.js'
 
+// Import error handler
+import { errorHandler } from '../api/middleware/error.js'
+
 // Create test app
 const createTestApp = () => {
   const app = new Hono()
   
-  // Add middleware to set env
+  // Add middleware to set env and auth context
   app.use('*', async (c, next) => {
+    // Preserve auth context from the original environment before overwriting
+    const originalAuth = c.env.auth
     c.env = { ...mockEnv, DB: c.env.DB }
+    
+    // Mock authentication context for tests
+    // Check if auth context is provided in the request environment
+    if (originalAuth && originalAuth.userId) {
+      c.set('auth', originalAuth)
+      c.set('userId', originalAuth.userId)
+    } else {
+      // Default to not-logged-in for tests that don't specify auth
+      c.set('auth', { userId: 'not-logged-in' })
+      c.set('userId', 'not-logged-in')
+    }
+    
     await next()
   })
   
+  // Add error handler
+  app.onError(errorHandler)
+  
   // Add routes
+  // User-specific endpoints (must come first to avoid conflicts)
+  app.get('/api/v1/user/:type', handleListUserItems)
+  app.get('/api/v1/health', handleHealthCheck)
+  
+  // Primary CRUDL endpoints
   app.post('/api/v1/:type', handleCreateItem)
   app.get('/api/v1/:type/:id', handleReadItem)
   app.put('/api/v1/:type/:id', handleUpdateItem)
   app.delete('/api/v1/:type/:id', handleDeleteItem)
+  
+  // Hierarchical endpoints
   app.get('/api/v1/:parentType/:parentId/:childType', handleListChildren)
-  app.get('/api/v1/user/:type', handleListUserItems)
-  app.get('/api/v1/health', handleHealthCheck)
   
   return app
 }

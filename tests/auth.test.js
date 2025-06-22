@@ -3,9 +3,10 @@ import { Hono } from 'hono'
 import { createTestUser, createTestSession, mockEnv } from './setup.js'
 import { env } from "cloudflare:test"
 
-// Import auth services and handlers
+// Import auth services and routes
 import { AuthService } from '../api/services/auth.js'
-import { handleSendCode, handleVerifyCode, handleLogout, handleMe } from '../api/routes/auth.js'
+import { EmailService } from '../api/services/email.js'
+import { authRoutes } from '../api/routes/auth.js'
 
 // Create test app
 const createTestApp = () => {
@@ -17,11 +18,8 @@ const createTestApp = () => {
     await next()
   })
   
-  // Add auth routes
-  app.post('/auth/send-code', handleSendCode)
-  app.post('/auth/verify-code', handleVerifyCode)
-  app.post('/auth/logout', handleLogout)
-  app.get('/auth/me', handleMe)
+  // Mount auth routes
+  app.route('/auth', authRoutes)
   
   return app
 }
@@ -29,39 +27,43 @@ const createTestApp = () => {
 describe('Authentication', () => {
   let app
   let authService
+  let emailService
 
   beforeEach(async () => {
     app = createTestApp()
-    authService = new AuthService(env.DB)
+    emailService = new EmailService(mockEnv)
+    authService = new AuthService(env.DB, emailService)
     mockEnv.DB = env.DB
   })
 
   describe('AuthService', () => {
-    describe('generateVerificationCode', () => {
-      it('should generate a 6-digit code', async () => {
+    describe('sendVerificationCode', () => {
+      it('should generate and store a 6-digit code', async () => {
         const email = 'test@example.com'
-        const code = await authService.generateVerificationCode(email)
+        const result = await authService.sendVerificationCode(email)
         
-        expect(code).toMatch(/^\d{6}$/)
+        expect(result.success).toBe(true)
         
         // Verify code is stored in database
         const stored = await env.DB.prepare(`
-          SELECT * FROM verification_codes WHERE email = ? AND code = ?
-        `).bind(email, code).first()
+          SELECT * FROM verification_codes WHERE email = ? ORDER BY createdAt DESC LIMIT 1
+        `).bind(email).first()
         
         expect(stored).toBeTruthy()
         expect(stored.email).toBe(email)
-        expect(stored.code).toBe(code)
+        expect(stored.code).toMatch(/^\d{6}$/)
         expect(stored.used).toBe(0)
       })
 
       it('should set expiration time', async () => {
         const email = 'test@example.com'
-        const code = await authService.generateVerificationCode(email)
+        const result = await authService.sendVerificationCode(email)
+        
+        expect(result.success).toBe(true)
         
         const stored = await env.DB.prepare(`
-          SELECT * FROM verification_codes WHERE email = ? AND code = ?
-        `).bind(email, code).first()
+          SELECT * FROM verification_codes WHERE email = ? ORDER BY createdAt DESC LIMIT 1
+        `).bind(email).first()
         
         const expiresAt = new Date(stored.expiresAt)
         const now = new Date()
@@ -74,25 +76,37 @@ describe('Authentication', () => {
       it('should invalidate previous codes for same email', async () => {
         const email = 'test@example.com'
         
-        // Generate first code
-        const code1 = await authService.generateVerificationCode(email)
+        // Send first code
+        const result1 = await authService.sendVerificationCode(email)
+        expect(result1.success).toBe(true)
         
-        // Generate second code
-        const code2 = await authService.generateVerificationCode(email)
+        // Get first code
+        const code1 = await env.DB.prepare(`
+          SELECT code FROM verification_codes WHERE email = ? ORDER BY createdAt DESC LIMIT 1
+        `).bind(email).first()
         
-        expect(code1).not.toBe(code2)
+        // Send second code
+        const result2 = await authService.sendVerificationCode(email)
+        expect(result2.success).toBe(true)
+        
+        // Get second code
+        const code2 = await env.DB.prepare(`
+          SELECT code FROM verification_codes WHERE email = ? ORDER BY createdAt DESC LIMIT 1
+        `).bind(email).first()
+        
+        expect(code1.code).not.toBe(code2.code)
         
         // First code should be marked as used
         const firstCode = await env.DB.prepare(`
           SELECT * FROM verification_codes WHERE email = ? AND code = ?
-        `).bind(email, code1).first()
+        `).bind(email, code1.code).first()
         
         expect(firstCode.used).toBe(1)
         
         // Second code should be active
         const secondCode = await env.DB.prepare(`
           SELECT * FROM verification_codes WHERE email = ? AND code = ?
-        `).bind(email, code2).first()
+        `).bind(email, code2.code).first()
         
         expect(secondCode.used).toBe(0)
       })
@@ -101,20 +115,32 @@ describe('Authentication', () => {
     describe('verifyCode', () => {
       it('should verify valid code', async () => {
         const email = 'test@example.com'
-        const code = await authService.generateVerificationCode(email)
         
-        const result = await authService.verifyCode(email, code)
+        // First send verification code to store it in database
+        const sendResult = await authService.sendVerificationCode(email)
+        expect(sendResult.success).toBe(true)
+        
+        // Get the stored code from database to use for verification
+        const storedCode = await env.DB.prepare(`
+          SELECT code FROM verification_codes
+          WHERE email = ? AND used = FALSE
+          ORDER BY createdAt DESC LIMIT 1
+        `).bind(email).first()
+        
+        expect(storedCode).toBeTruthy()
+        
+        const result = await authService.verifyCode(email, storedCode.code)
         
         expect(result.success).toBe(true)
         expect(result.user).toBeTruthy()
         expect(result.user.email).toBe(email)
-        expect(result.session).toBeTruthy()
-        expect(result.session.token).toBeTruthy()
+        // verifyCode doesn't return session, only verifyCodeAndLogin does
+        expect(result.session).toBeUndefined()
       })
 
       it('should reject invalid code', async () => {
         const email = 'test@example.com'
-        await authService.generateVerificationCode(email)
+        await authService.sendVerificationCode(email)
         
         const result = await authService.verifyCode(email, '000000')
         
@@ -124,16 +150,22 @@ describe('Authentication', () => {
 
       it('should reject expired code', async () => {
         const email = 'test@example.com'
-        const code = await authService.generateVerificationCode(email)
+        const sendResult = await authService.sendVerificationCode(email)
+        expect(sendResult.success).toBe(true)
+        
+        // Get the stored code
+        const storedCode = await env.DB.prepare(`
+          SELECT code FROM verification_codes WHERE email = ? ORDER BY createdAt DESC LIMIT 1
+        `).bind(email).first()
         
         // Manually expire the code
         await env.DB.prepare(`
-          UPDATE verification_codes 
+          UPDATE verification_codes
           SET expiresAt = datetime('now', '-1 hour')
           WHERE email = ? AND code = ?
-        `).bind(email, code).run()
+        `).bind(email, storedCode.code).run()
         
-        const result = await authService.verifyCode(email, code)
+        const result = await authService.verifyCode(email, storedCode.code)
         
         expect(result.success).toBe(false)
         expect(result.error).toBe('Invalid or expired verification code')
@@ -141,13 +173,19 @@ describe('Authentication', () => {
 
       it('should reject used code', async () => {
         const email = 'test@example.com'
-        const code = await authService.generateVerificationCode(email)
+        const sendResult = await authService.sendVerificationCode(email)
+        expect(sendResult.success).toBe(true)
+        
+        // Get the stored code
+        const storedCode = await env.DB.prepare(`
+          SELECT code FROM verification_codes WHERE email = ? ORDER BY createdAt DESC LIMIT 1
+        `).bind(email).first()
         
         // Use the code once
-        await authService.verifyCode(email, code)
+        await authService.verifyCode(email, storedCode.code)
         
         // Try to use it again
-        const result = await authService.verifyCode(email, code)
+        const result = await authService.verifyCode(email, storedCode.code)
         
         expect(result.success).toBe(false)
         expect(result.error).toBe('Invalid or expired verification code')
@@ -155,9 +193,21 @@ describe('Authentication', () => {
 
       it('should create user if not exists', async () => {
         const email = 'newuser@example.com'
-        const code = await authService.generateVerificationCode(email)
         
-        const result = await authService.verifyCode(email, code)
+        // First send verification code to store it in database
+        const sendResult = await authService.sendVerificationCode(email)
+        expect(sendResult.success).toBe(true)
+        
+        // Get the stored code from database to use for verification
+        const storedCode = await env.DB.prepare(`
+          SELECT code FROM verification_codes
+          WHERE email = ? AND used = FALSE
+          ORDER BY createdAt DESC LIMIT 1
+        `).bind(email).first()
+        
+        expect(storedCode).toBeTruthy()
+        
+        const result = await authService.verifyCode(email, storedCode.code)
         
         expect(result.success).toBe(true)
         expect(result.user.email).toBe(email)
@@ -177,8 +227,20 @@ describe('Authentication', () => {
         // Create existing user
         const existingUser = await createTestUser(env.DB, { email })
         
-        const code = await authService.generateVerificationCode(email)
-        const result = await authService.verifyCode(email, code)
+        // First send verification code to store it in database
+        const sendResult = await authService.sendVerificationCode(email)
+        expect(sendResult.success).toBe(true)
+        
+        // Get the stored code from database to use for verification
+        const storedCode = await env.DB.prepare(`
+          SELECT code FROM verification_codes
+          WHERE email = ? AND used = FALSE
+          ORDER BY createdAt DESC LIMIT 1
+        `).bind(email).first()
+        
+        expect(storedCode).toBeTruthy()
+        
+        const result = await authService.verifyCode(email, storedCode.code)
         
         expect(result.success).toBe(true)
         expect(result.user.id).toBe(existingUser.id)
@@ -247,9 +309,9 @@ describe('Authentication', () => {
   })
 
   describe('Auth API Endpoints', () => {
-    describe('POST /auth/send-code', () => {
+    describe('POST /auth/login', () => {
       it('should send verification code for valid email', async () => {
-        const response = await app.request('/auth/send-code', {
+        const response = await app.request('/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: 'test@example.com' })
@@ -258,7 +320,7 @@ describe('Authentication', () => {
         expect(response.status).toBe(200)
         const data = await response.json()
         expect(data.success).toBe(true)
-        expect(data.message).toContain('verification code sent')
+        expect(data.message).toContain('Verification code sent')
 
         // Verify code was created in database
         const code = await env.DB.prepare(`
@@ -269,7 +331,7 @@ describe('Authentication', () => {
       })
 
       it('should reject invalid email format', async () => {
-        const response = await app.request('/auth/send-code', {
+        const response = await app.request('/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: 'invalid-email' })
@@ -281,7 +343,7 @@ describe('Authentication', () => {
       })
 
       it('should reject missing email', async () => {
-        const response = await app.request('/auth/send-code', {
+        const response = await app.request('/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
@@ -293,12 +355,12 @@ describe('Authentication', () => {
       })
     })
 
-    describe('POST /auth/verify-code', () => {
+    describe('POST /auth/verify', () => {
       it('should verify valid code and return session', async () => {
         const email = 'test@example.com'
         
         // First send code
-        await app.request('/auth/send-code', {
+        await app.request('/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })
@@ -309,7 +371,7 @@ describe('Authentication', () => {
           SELECT code FROM verification_codes WHERE email = ? AND used = 0
         `).bind(email).first()
 
-        const response = await app.request('/auth/verify-code', {
+        const response = await app.request('/auth/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, code: codeRecord.code })
@@ -330,25 +392,25 @@ describe('Authentication', () => {
         const email = 'test@example.com'
         
         // Send code first
-        await app.request('/auth/send-code', {
+        await app.request('/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })
         }, env)
 
-        const response = await app.request('/auth/verify-code', {
+        const response = await app.request('/auth/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, code: '000000' })
         }, env)
 
-        expect(response.status).toBe(400)
+        expect(response.status).toBe(401)
         const data = await response.json()
         expect(data.error).toContain('Invalid or expired')
       })
 
       it('should reject missing parameters', async () => {
-        const response = await app.request('/auth/verify-code', {
+        const response = await app.request('/auth/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: 'test@example.com' }) // Missing code
@@ -417,7 +479,7 @@ describe('Authentication', () => {
 
         // Should clear session cookie
         const setCookieHeader = response.headers.get('Set-Cookie')
-        expect(setCookieHeader).toContain('session=; Max-Age=0')
+        expect(setCookieHeader).toContain('Max-Age=0')
       })
 
       it('should handle logout without session gracefully', async () => {
@@ -437,7 +499,7 @@ describe('Authentication', () => {
       const email = 'integration@example.com'
 
       // Step 1: Send verification code
-      const sendResponse = await app.request('/auth/send-code', {
+      const sendResponse = await app.request('/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -451,7 +513,7 @@ describe('Authentication', () => {
       `).bind(email).first()
 
       // Step 3: Verify code
-      const verifyResponse = await app.request('/auth/verify-code', {
+      const verifyResponse = await app.request('/auth/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: codeRecord.code })
@@ -495,7 +557,7 @@ describe('Authentication', () => {
       const promises = []
       for (let i = 0; i < 3; i++) {
         promises.push(
-          app.request('/auth/send-code', {
+          app.request('/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })

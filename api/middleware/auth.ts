@@ -31,16 +31,16 @@ export const extractUserFromRequest = async (c: Context): Promise<AuthContext | 
     const authService = createAuthService(c.env.DB, emailService)
 
     // Validate session and get user
-    const user = await authService.validateSession(sessionToken)
+    const sessionResult = await authService.validateSession(sessionToken)
 
-    if (!user) {
+    if (!sessionResult.valid || !sessionResult.user) {
       return null
     }
 
     return {
-      userId: user.id,
-      email: user.email,
-      name: user.name
+      userId: sessionResult.user.id,
+      email: sessionResult.user.email,
+      name: sessionResult.user.name
     }
   } catch (error) {
     console.error('Error extracting user from request:', error)

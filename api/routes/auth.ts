@@ -117,6 +117,7 @@ auth.post('/verify', async (c) => {
     return c.json({
       success: true,
       user: result.user,
+      session: result.session,
       message: 'Login successful'
     })
 
@@ -193,15 +194,15 @@ auth.get('/me', async (c) => {
     const authService = createAuthService(c.env.DB, emailService)
 
     // Validate session
-    const user = await authService.validateSession(sessionToken)
+    const sessionResult = await authService.validateSession(sessionToken)
 
-    if (!user) {
+    if (!sessionResult.valid || !sessionResult.user) {
       throw new ApiError(401, 'Invalid or expired session', 'INVALID_SESSION')
     }
 
     return c.json({
       success: true,
-      user
+      user: sessionResult.user
     })
 
   } catch (error) {

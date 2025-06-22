@@ -5,6 +5,7 @@ import { Context } from 'hono'
 import { DatabaseService } from '../services/database'
 import { getUserId, getAuthenticatedUser } from '../middleware/auth'
 import { validateRequired, validateType, notFoundError } from '../middleware/error'
+import { ApiError } from '../types/api'
 import type { Env, CreateItemRequest, UpdateItemRequest } from '../types/api'
 
 // Helper to get database service from context
@@ -27,12 +28,15 @@ const parseQueryParams = (c: Context) => {
 export const handleCreateItem = async (c: Context) => {
   try {
     const type = c.req.param('type')
-    const userId = getUserId(c)
+    const auth = getAuthenticatedUser(c)
     
     validateRequired(type, 'type')
     
     const body = await c.req.json() as CreateItemRequest
     const { data, id, parentType, parentId } = body
+    
+    // Validate required fields
+    validateRequired(data, 'data')
     
     const dbService = getDbService(c)
     const item = await dbService.createItem(type, {
@@ -40,11 +44,27 @@ export const handleCreateItem = async (c: Context) => {
       data,
       parentType,
       parentId,
-      userId
+      userId: auth.userId
     })
     
     return c.json(item, 201)
   } catch (error) {
+    // Handle JSON parsing errors
+    if (error instanceof SyntaxError && error.message.includes('JSON')) {
+      throw new ApiError(400, 'Invalid JSON in request body', 'INVALID_JSON')
+    }
+    
+    // Handle database constraint errors
+    if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
+      throw new ApiError(400, 'Item with this ID already exists', 'DUPLICATE_ID')
+    }
+    
+    // Handle other database errors
+    if (error instanceof Error && error.message.includes('D1_ERROR')) {
+      throw new ApiError(400, 'Database operation failed', 'DATABASE_ERROR')
+    }
+    
+    // Re-throw ApiErrors and other errors to be handled by error middleware
     throw error
   }
 }
@@ -63,6 +83,7 @@ export const handleReadItem = async (c: Context) => {
     
     return c.json(item, 200)
   } catch (error) {
+    // Re-throw all errors to be handled by error middleware
     throw error
   }
 }
@@ -93,17 +114,24 @@ export const handleDeleteItem = async (c: Context) => {
   try {
     const type = c.req.param('type')
     const id = c.req.param('id')
-    const userId = getUserId(c)
+    const auth = getAuthenticatedUser(c)
     
     validateRequired(type, 'type')
     validateRequired(id, 'id')
     
     const dbService = getDbService(c)
-    await dbService.deleteItem(type, id, userId)
+    await dbService.deleteItem(type, id, auth.userId)
     
     // Return empty response with 200 status (matching AWS implementation)
     return c.json({}, 200)
   } catch (error) {
+    if (error instanceof ApiError) {
+      return c.json({
+        success: false,
+        error: error.message,
+        code: error.code
+      }, error.status as any)
+    }
     throw error
   }
 }
@@ -135,17 +163,24 @@ export const handleListChildren = async (c: Context) => {
 export const handleListUserItems = async (c: Context) => {
   try {
     const type = c.req.param('type') || 'all'
-    const userId = getUserId(c)
+    const auth = getAuthenticatedUser(c)
     const { limit, offset } = parseQueryParams(c)
     
     const dbService = getDbService(c)
-    const response = await dbService.listUserItems(userId, type, {
+    const response = await dbService.listUserItems(auth.userId, type, {
       limit,
       offset
     })
     
     return c.json(response, 200)
   } catch (error) {
+    if (error instanceof ApiError) {
+      return c.json({
+        success: false,
+        error: error.message,
+        code: error.code
+      }, error.status as any)
+    }
     throw error
   }
 }

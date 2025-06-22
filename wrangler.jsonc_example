@@ -1,0 +1,29 @@
+{
+  "name": "newapp-api",
+  "main": "./api/index.ts",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  "compatibility_date": "2025-06-20",
+  "vars": {
+    "ENVIRONMENT": "development",
+    "MAILJET_API_KEY": "your-mailjet-api-key",
+    "MAILJET_SECRET_KEY": "your-mailjet-secret-key",
+    "FROM_EMAIL": "noreply@vff.example.com",
+    "FROM_NAME": "Your Application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "newapp-database",
+      "database_id": "uuid-from-cloudflare-dash"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "*/api/v1/*",
+      "zone_name": "vff.example.com"
+    }
+  ]
+}
