@@ -14,7 +14,7 @@ const app = new Hono<{ Bindings: Env }>()
 
 // Global middleware
 app.use('*', cors({
-  origin: ['http://localhost:5173', 'https://vff.drwayne.party'],
+  origin: ['http://localhost:5173', 'https://vff.example.com'],
   credentials: true,
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization']

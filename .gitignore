@@ -17,9 +17,6 @@ dist-ssr
 coverage
 *.local
 
-/cypress/videos/
-/cypress/screenshots/
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -31,6 +28,12 @@ coverage
 *.sw?
 .aider*
 
+# Build & deploy tools
 *.tsbuildinfo
 .sst
 .wrangler
+
+# hide Cloudflare config "secrets"
+wrangler.jsonc
+wrangler.toml
+
