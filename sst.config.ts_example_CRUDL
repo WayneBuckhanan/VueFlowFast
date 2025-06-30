@@ -4,7 +4,9 @@
 
 Integrate the generic CRUDL interface on top of the Cognito by adding the packages used on the server-side and using the helpers in `src/api.ts`.
 
-`npm install @aws-sdk/client-dynamodb @aws-sdk/util-dynamodb`
+`npm install @aws-sdk/client-dynamodb @aws-sdk/util-dynamodb aws-amplify`
+
+The helpers use the Amplify library for Cognito and API Gateway access. (Nothing to do with the Amplify backend services.)
 
 ```js
 // Vue Composition API
