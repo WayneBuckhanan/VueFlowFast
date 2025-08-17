@@ -81,7 +81,7 @@ meta:
 
 <script setup lang="ts">
 import { ref, onMounted, watchEffect, watch } from 'vue'
-import { createItem, readItem, updateItem, deleteItem, listUserItems, listChildren } from '@/localApi'
+import { createItem, readItem, updateItem, deleteItem, listUserItems, listChildren } from '@/crudl-client'
 
 interface DemoItem {
   id: string
