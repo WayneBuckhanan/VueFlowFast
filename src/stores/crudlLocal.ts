@@ -2,7 +2,7 @@
 
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
-import * as CRUDL from '../crudl-client';
+import type * as CRUDL from '../crudl-client';
 
 function generateStorageKey(type: string, id: string): string {
   return `${type}#${id}`;
@@ -46,8 +46,8 @@ export const useLocalCrudlStore = defineStore('localCrudl', () => {
     async function readItem(type: string, id: string): Promise<CRUDL.Item> {
       const storageKey = generateStorageKey(type, id);
       const item = items.value.get(storageKey);
-      if (!item) throw new Error('Item not found');
-      return item;
+      if (!item) throw new Error(`Item with key ${storageKey} not found`);
+      else return item;
     }
 
     async function updateItem(
@@ -58,7 +58,7 @@ export const useLocalCrudlStore = defineStore('localCrudl', () => {
     ): Promise<CRUDL.Item> {
       const storageKey = generateStorageKey(type, id);
       const existingItem = items.value.get(storageKey);
-      if (!existingItem) throw new Error('Item not found');
+      if (!existingItem) throw new Error(`Item with key ${storageKey} not found`);
 
       const updatedData = options?.merge ? { ...existingItem.data, ...data } : data;
 
@@ -83,7 +83,7 @@ export const useLocalCrudlStore = defineStore('localCrudl', () => {
     async function deleteItem(type: string, id: string): Promise<void> {
       const storageKey = generateStorageKey(type, id);
       if (!items.value.has(storageKey)) {
-        throw new Error('Item not found for delete');
+        throw new Error(`Item with key ${storageKey} not found for delete`);
       }
       items.value.delete(storageKey);
       return Promise.resolve();

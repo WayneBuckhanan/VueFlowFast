@@ -10,13 +10,14 @@
 // export interface Item { type: string; id: string; parentType?: string; parentId?: string; data: Record<string, any>; meta: ItemMeta; user: string; /* unique user id */ }
 // export interface QueryResponse { items: Item[]; nextPage?: string; }
 // 
-// export async function createItem( item: Partial<Item>): Promise<Item>
-// export async function readItem( type: string, id: string): Promise<Item>
-// export async function updateItem( type: string, id: string, data: Record<string, any>, options?: { merge?: boolean }): Promise<Item>
-// export async function deleteItem( type: string, id: string): Promise<void>
-// export async function listChildren( parentType: string, parentId: string, childType?: string, /* can be 'all' (default) to retrieve all direct children */ options?: { limit?: number; nextCursor?: string }): Promise<QueryResponse>
+// export async function createItem(item: Partial<Item>): Promise<Item>
+// export async function readItem(type: string, id: string): Promise<Item>
+// export async function updateItem(type: string, id: string, data: Record<string, any>, options?: { merge?: boolean }): Promise<Item>
+// export async function deleteItem(type: string, id: string): Promise<void>
+// export async function listChildren(parentType: string, parentId: string, childType?: string, /* can be 'all' (default) to retrieve all direct children */ options?: { limit?: number; nextPage?: string }): Promise<QueryResponse>
 // export async function listUserItems( /* assumes the userId attached to the request */ type?: string, /* can be 'all' (default) to retrieve all direct children */ options?: { limit?: number; nextPage?: string }): Promise<QueryResponse>
 // ```
  
 export * from './crudl-api-local'
 //export * from './crudl-api-aws'
+//export * from './crudl-api-cloudflare'
