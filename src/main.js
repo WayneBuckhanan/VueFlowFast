@@ -1,8 +1,7 @@
 const DEFAULT_PAGE_TITLE = 'Default App Title'
 // Base Vue config
 import { createApp } from 'vue'
-import App from './App.vue'
-const app = createApp(App)
+const app = createApp({ template: '<RouterView/>' })
 
 // Vue Router with unplugin-vue-router config
 import { createRouter, createWebHistory } from 'vue-router'
@@ -32,11 +31,16 @@ app.use(PrimeVue, {
       //darkModeSelector: '.my-app-dark',
       cssLayer: {
         name: 'primevue',
-        order: 'theme, base, primevue, components, utilities'
+        order: 'tailwind-base, theme, base, primevue, tailwind-utilities, components, utilities'
       }
     }
   }
-}) 
+})
+//// PrimeVue Services
+//import ConfirmationService from 'primevue/confirmationservice'
+//import ToastService from 'primevue/toastservice'
+//app.use(ConfirmationService)
+//app.use(ToastService)
 
 // Pinia browser store
 import { createPinia } from 'pinia'

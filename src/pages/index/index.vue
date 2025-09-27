@@ -41,13 +41,13 @@ meta:
           .flex.gap-2
             Button(
               @click="handleUpdate(data)"
-              icon="pi pi-pencil" 
+              icon="iconify mdi--edit" 
               severity="info"
               rounded
             )
             Button(
               @click="handleDelete(data)"
-              icon="pi pi-trash"
+              icon="iconify mdi--delete"
               severity="danger"
               rounded
             )

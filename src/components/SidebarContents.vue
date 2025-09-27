@@ -4,7 +4,7 @@ Menu(:model="menuItems").mx-2
 
 <script setup>
 const menuItems = [
-  { label: 'Home', icon: 'pi pi-home', url: '/' },
-  { label: 'Help', icon: 'pi pi-question', url: '/help' },
+  { label: 'Home', icon: 'iconify mdi--home', url: '/' },
+  { label: 'Help', icon: 'iconify mdi--help', url: '/help' },
 ]
 </script>
