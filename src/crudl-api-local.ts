@@ -20,7 +20,7 @@ export interface Item {
 
 export interface QueryResponse {
   items: Item[];
-  nextCursor?: string;
+  nextPage?: string;
 }
 
 /* --- */
@@ -62,7 +62,7 @@ export async function listChildren(
   parentType: string,
   parentId: string,
   childType?: string,
-  options?: { limit?: number; nextCursor?: string }
+  options?: { limit?: number; nextPage?: string }
 ): Promise<QueryResponse> {
   const store = useLocalCrudlStore();
   return store.listChildren(parentType, parentId, childType, options);
@@ -70,7 +70,7 @@ export async function listChildren(
 
 export async function listUserItems(
   type?: string,
-  options?: { limit?: number; nextCursor?: string }
+  options?: { limit?: number; nextPage?: string }
 ): Promise<QueryResponse> {
   const store = useLocalCrudlStore();
   return store.listUserItems(type, options);

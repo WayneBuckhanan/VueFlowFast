@@ -93,10 +93,10 @@ export const useLocalCrudlStore = defineStore('localCrudl', () => {
       parentType: string,
       parentId: string,
       childType='all',
-      options?: { limit?: number; nextCursor?: string }
+      options?: { limit?: number; nextPage?: string }
     ): Promise<CRUDL.QueryResponse> {
       const limit = options?.limit || 50;
-      const startIndex = options?.nextCursor ? parseInt(options.nextCursor, 10) : 0;
+      const startIndex = options?.nextPage ? parseInt(options.nextPage, 10) : 0;
 
       const allMatchingChildren: CRUDL.Item[] = [];
       for (const item of items.value.values()) { //TODO confirm shape of items and why we are using .values() here
@@ -109,21 +109,21 @@ export const useLocalCrudlStore = defineStore('localCrudl', () => {
       }
 
       const paginatedItems = allMatchingChildren.slice(startIndex, startIndex + limit);
-      let newNextCursor: string | undefined = undefined;
+      let newNextPage: string | undefined = undefined;
 
       if (startIndex + limit < allMatchingChildren.length) {
-        newNextCursor = (startIndex + limit).toString();
+        newNextPage = (startIndex + limit).toString();
       }
 
-      return { items: paginatedItems, nextCursor: newNextCursor };
+      return { items: paginatedItems, nextPage: newNextPage };
     }
 
     async function listUserItems(
       type='all',
-      options?: { limit?: number; nextCursor?: string }
+      options?: { limit?: number; nextPage?: string }
     ): Promise<CRUDL.QueryResponse> {
       const limit = options?.limit || 50;
-      const startIndex = options?.nextCursor ? parseInt(options.nextCursor, 0) : 0;
+      const startIndex = options?.nextPage ? parseInt(options.nextPage, 0) : 0;
 
       // Get all items from the store
       let allItemsInStore: CRUDL.Item[] = Array.from(items.value.values());
@@ -138,10 +138,10 @@ export const useLocalCrudlStore = defineStore('localCrudl', () => {
       }
 
       const paginatedItems = filteredItems.slice(startIndex, startIndex + limit);
-      const newNextCursor = (startIndex + limit < filteredItems.length) ? (startIndex + limit).toString() : undefined;
+      const newNextPage = (startIndex + limit < filteredItems.length) ? (startIndex + limit).toString() : undefined;
 
       // Using Promise.resolve as per example, though direct return of the object is also fine in async function
-      return Promise.resolve({ items: paginatedItems, nextCursor: newNextCursor });
+      return Promise.resolve({ items: paginatedItems, nextPage: newNextPage });
     }
 
     return {
