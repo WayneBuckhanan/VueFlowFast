@@ -1,8 +1,11 @@
 @import"https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;1,700&display=swap";
-@import"https://fonts.googleapis.com/icon?family=Material+Icons";
 @import "tailwindcss";
 @import "tailwindcss-primeui";
-@import "primeicons/primeicons.css";
+/* @plugin "@tailwindcss/typography"; */
+@plugin "@iconify/tailwind4" {
+  prefixes: mdi;
+};
+
 /* @custom-variant dark (&:where(.my-app-dark, .my-app-dark *)); // [configuration for dark mode switch in UI](https://primevue.org/tailwind/#darkmode)
 */
 

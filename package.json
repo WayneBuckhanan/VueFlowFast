@@ -9,11 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@iconify-json/mdi": "^1.2.3",
+    "@iconify/tailwind4": "^1.0.6",
     "@primeuix/themes": "^1.2.3",
     "@primevue/auto-import-resolver": "^4.3.7",
     "@tailwindcss/vite": "^4.1.12",
     "@vitejs/plugin-vue": "^6.0.1",
-    "primeicons": "^7.0.0",
     "primevue": "^4.3.7",
     "pug": "^3.0.3",
     "tailwindcss": "^4.1.12",
