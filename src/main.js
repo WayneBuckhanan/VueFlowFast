@@ -1,8 +1,7 @@
 const DEFAULT_PAGE_TITLE = 'Default App Title'
 // Base Vue config
 import { createApp } from 'vue'
-import App from './App.vue'
-const app = createApp(App)
+const app = createApp({ template: '<RouterView/>' }) // collapse to here since App.vue had one line
 
 // Vue Router with unplugin-vue-router config
 import { createRouter, createWebHistory } from 'vue-router'
@@ -19,6 +18,7 @@ router.beforeEach((to)=> {
 })
 app.use(router)
 
+// PrimeVue
 import PrimeVue from 'primevue/config'
 //import Theme from '@primeuix/themes/aura'
 import Theme from '@primeuix/themes/lara'
@@ -31,11 +31,17 @@ app.use(PrimeVue, {
       //darkModeSelector: '.my-app-dark',
       cssLayer: {
         name: 'primevue',
-        order: 'theme, base, primevue, components, utilities'
+        order: 'tailwind-base, theme, base, primevue, tailwind-utilities, components, utilities'
       }
     }
   }
 }) 
+//// PrimeVue Services
+//import ConfirmationService from 'primebue/confirmationservice'
+//app.use(ConfirmationService)
+//import ToastService from 'primevue/toastservice'
+//app.use(ToastService)
+
 
 // Our app styles applied after all other packages above
 import './index.css'
