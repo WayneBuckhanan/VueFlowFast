@@ -1,6 +1,6 @@
 <route>
 meta:
-  title: I love to count! Ah ha ha ha!
+  title: This is the index page
 </route>
 
 <template lang="pug">

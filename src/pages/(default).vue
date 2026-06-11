@@ -1,7 +1,7 @@
 <!--
-  This is the default "layout" for any routes nested from files within the @/src/pages/index directory.
-  You can do similar for any `name/` directory with a `name.vue` file that includes a `RouterView` component.
-  See [File based routing | Unplugin Vue Router](https://uvr.esm.is/guide/file-based-routing.html#nested-routes) for more info.
+  This is the default "layout" for any routes nested from files within the @/src/pages/(default)/ directory.
+  You can do similar for any `name/` directory with a `name.vue` file that includes a `RouterView` component. Without parenthesis impact the route, with parens don't.
+  See [File Conventions | Vue Router](https://router.vuejs.org/file-based-routing/file-based-routing.html) for more info.
 -->
 <template lang="pug">
 .flex.flex-col.min-h-screen(class="bg-slate-100 dark:bg-slate-700")
