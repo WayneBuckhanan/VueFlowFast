@@ -1,7 +1,7 @@
 const DEFAULT_PAGE_TITLE = 'Default App Title'
 // Base Vue config
 import { createApp } from 'vue'
-const app = createApp({ template: '<RouterView/>' })
+const app = createApp({ template: '<RouterView/>' }) // collapse to here since App.vue had one line
 
 // Vue Router with unplugin-vue-router config
 import { createRouter, createWebHistory } from 'vue-router'

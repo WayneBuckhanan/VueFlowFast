@@ -2,8 +2,7 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import Vue from '@vitejs/plugin-vue'
 // Baseline Helpers
-import VueRouter from 'unplugin-vue-router/vite'
-import { VueRouterAutoImports } from 'unplugin-vue-router'
+import VueRouter from 'vue-router/vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { PrimeVueResolver } from '@primevue/auto-import-resolver'
@@ -14,7 +13,7 @@ export default defineConfig({
   plugins: [
     VueRouter({
       routeBlockLang: 'yaml',
-      //routesFolder: 'src/views',
+      //routesFolder: 'src/views', // override the 'src/pages' default if you need compatibility with older/other file structures
       /* config options w/defaults */
       //routesFolder: 'src/pages',
       //extensions: ['.vue'],
@@ -33,15 +32,14 @@ export default defineConfig({
       ],
     }),
     AutoImport({ imports: [
-      'vue', 'pinia', //'vue-router', // presets from github.com/unjs/unimport used by unplugin-auto-import
-      VueRouterAutoImports, // swap 'vue-router' for VueRouterAutoImports from unplugin-vue-router
+      'vue', 'pinia', 'vue-router', // presets from github.com/unjs/unimport used by unplugin-auto-import
       //{ '@/store/auth.js': ['useAuthStore']}, // Pinia auth store
     ]}),
   ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      vue: 'vue/dist/vue.esm-bundler.js',
+      vue: 'vue/dist/vue.esm-bundler.js', // to allow the main.js to absorb the nearly empty App.vue file
     }
   },
   server: {
