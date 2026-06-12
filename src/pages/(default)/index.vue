@@ -52,7 +52,7 @@ meta:
               rounded
             )
     
-    Button(@click="refreshItems" label="Refresh List" severity="secondary")
+    Button(@click="refreshItems()" label="Refresh List" severity="secondary")
     
     .p-4.rounded-lg(v-if="selectedItem")
       h2.font-bold.mb-2 Selected Item Details
