@@ -52,9 +52,3 @@ import './index.css'
 // Initialize auth store on app startup
 import { useAuthStore } from './stores/auth'
 app.mount('#app')
-
-// Initialize authentication state after app is mounted
-const authStore = useAuthStore()
-authStore.initialize().catch(error => {
-  console.warn('Failed to initialize auth state:', error)
-})
