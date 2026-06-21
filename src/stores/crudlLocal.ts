@@ -15,7 +15,7 @@ export const useLocalCrudlStore = defineStore('localCrudl', () => {
       const itemId = item.id || crypto.randomUUID();
       const itemType = item.type;
       const itemParentType = item.parentType || 'USER';
-      const itemParentId = item.parentId || 'USER_ID'; // Simulated single user
+      const itemParentId = item.parentId || 'USER_ID'; // Simulated single user for local implementation
 
       const now = new Date().toISOString();
       const meta: CRUDL.ItemMeta = {
@@ -50,17 +50,14 @@ export const useLocalCrudlStore = defineStore('localCrudl', () => {
       else return item;
     }
 
-    async function updateItem(
+    async function upsertItem(
       type: string,
       id: string,
-      data: Record<string, any>,
-      options?: { merge?: boolean }
+      item: Partial<CRUDL.Item>
     ): Promise<CRUDL.Item> {
       const storageKey = generateStorageKey(type, id);
       const existingItem = items.value.get(storageKey);
       if (!existingItem) throw new Error(`Item with key ${storageKey} not found`);
-
-      const updatedData = options?.merge ? { ...existingItem.data, ...data } : data;
 
       const currentMeta = existingItem.meta || { createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), version: 0 };
 
@@ -70,9 +67,44 @@ export const useLocalCrudlStore = defineStore('localCrudl', () => {
         version: currentMeta.version + 1,
       };
 
+      // Field-level upsert: override only the fields present on the partial item.
+      // `id`/`type` are part of the storage key and are intentionally not
+      // mutated, even if present on the partial item.
       const updatedItem: CRUDL.Item = {
         ...existingItem,
-        data: updatedData,
+        ...(item.type !== undefined && { type: item.type }),
+        ...(item.parentType !== undefined && { parentType: item.parentType }),
+        ...(item.parentId !== undefined && { parentId: item.parentId }),
+        ...(item.data !== undefined && { data: item.data }),
+        ...(item.user !== undefined && { user: item.user }),
+        meta: newMeta,
+      };
+
+      items.value.set(storageKey, updatedItem);
+      return updatedItem;
+    }
+
+    async function updateItemData(
+      type: string,
+      id: string,
+      dataUpdates: CRUDL.ItemData
+    ): Promise<CRUDL.Item> {
+      const storageKey = generateStorageKey(type, id);
+      const existingItem = items.value.get(storageKey);
+      if (!existingItem) throw new Error(`Item with key ${storageKey} not found`);
+
+      const currentMeta = existingItem.meta || { createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), version: 0 };
+
+      const newMeta: CRUDL.ItemMeta = {
+        ...currentMeta,
+        updatedAt: new Date().toISOString(),
+        version: currentMeta.version + 1,
+      };
+
+      // Merge the data updates into the existing data.
+      const updatedItem: CRUDL.Item = {
+        ...existingItem,
+        data: { ...(existingItem.data || {}), ...dataUpdates },
         meta: newMeta,
       };
 
@@ -89,11 +121,11 @@ export const useLocalCrudlStore = defineStore('localCrudl', () => {
       return Promise.resolve();
     }
 
-    async function listChildren(
+    async function listChildItems(
       parentType: string,
       parentId: string,
       childType='all',
-      options?: { limit?: number; nextPage?: string }
+      options?: CRUDL.QueryOptions
     ): Promise<CRUDL.QueryResponse> {
       const limit = options?.limit || 50;
       const startIndex = options?.nextPage ? parseInt(options.nextPage, 10) : 0;
@@ -120,7 +152,7 @@ export const useLocalCrudlStore = defineStore('localCrudl', () => {
 
     async function listUserItems(
       type='all',
-      options?: { limit?: number; nextPage?: string }
+      options?: CRUDL.QueryOptions
     ): Promise<CRUDL.QueryResponse> {
       const limit = options?.limit || 50;
       const startIndex = options?.nextPage ? parseInt(options.nextPage, 0) : 0;
@@ -148,9 +180,10 @@ export const useLocalCrudlStore = defineStore('localCrudl', () => {
       items,
       createItem,
       readItem,
-      updateItem,
+      upsertItem,
+      updateItemData,
       deleteItem,
-      listChildren,
+      listChildItems,
       listUserItems
     }
   },

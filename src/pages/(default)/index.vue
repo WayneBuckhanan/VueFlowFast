@@ -81,7 +81,7 @@ meta:
 
 <script setup lang="ts">
 import { ref, onMounted, watchEffect, watch } from 'vue'
-import { createItem, readItem, updateItem, deleteItem, listUserItems, listChildren } from '@/crudl-client'
+import { createItem, readItem, upsertItem, updateItemData, deleteItem, listUserItems, listChildItems } from '@/crudl-client'
 
 interface DemoItem {
   id: string
@@ -101,7 +101,7 @@ watchEffect(async () => {
     children.value = []
     return
   }
-  const { items } = await listChildren(selectedItem.value.type, selectedItem.value.id)
+  const { items } = await listChildItems(selectedItem.value.type, selectedItem.value.id)
   children.value = items as DemoItem[]
 })
 
@@ -139,7 +139,7 @@ async function handleCreateChild() {
 async function handleUpdate(item: DemoItem) {
   const newText = prompt('Edit text:', item.data.text)
   if (newText !== null) {
-    await updateItem(item.type, item.id, { text: newText })
+    await updateItemData(item.type, item.id, { text: newText })
     await refreshItems()
   }
 }

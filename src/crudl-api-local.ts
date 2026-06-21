@@ -8,12 +8,14 @@ export interface ItemMeta {
   version: number;
 }
 
+export type ItemData = Record<string, any>;
+
 export interface Item {
   type: string;
   id?: string;
   parentType?: string;
   parentId?: string;
-  data?: Record<string, any>;
+  data?: ItemData;
   meta?: ItemMeta;
   user?: string; // Cognito user sub
 }
@@ -23,7 +25,24 @@ export interface QueryResponse {
   nextPage?: string;
 }
 
+export interface QueryOptions {
+  limit?: number;
+  nextPage?: string;
+  user?: string; // user override is admin only
+}
+
 /* --- */
+
+/**
+ * No-op on the local sim backend. The local store is single-user with no
+ * admin/user distinction, so there is no separate admin endpoint to switch to.
+ * Exists solely to satisfy the generic CRUDL contract in `crudl-client.ts`
+ * so callers (e.g. `crudl-client-colada.ts`) can target it uniformly across
+ * local / AWS / Cloudflare backends.
+ */
+export function makeAdmin(): void {
+  // intentionally empty
+}
 
 export async function createItem(
   item: Partial<Item>
@@ -40,14 +59,35 @@ export async function readItem(
   return store.readItem(type, id);
 }
 
+export async function upsertItem(
+  type: string,
+  id: string,
+  item: Partial<Item>
+): Promise<Item> {
+  const store = useLocalCrudlStore();
+  return store.upsertItem(type, id, item);
+}
+
+export async function updateItemData(
+  type: string,
+  id: string,
+  dataUpdates: ItemData
+): Promise<Item> {
+  const store = useLocalCrudlStore();
+  return store.updateItemData(type, id, dataUpdates);
+}
+
+/** @deprecated use upsertItem (merge=false) or updateItemData (merge=true) instead */
 export async function updateItem(
   type: string,
   id: string,
   data: Record<string, any>,
   options?: { merge?: boolean }
 ): Promise<Item> {
-  const store = useLocalCrudlStore();
-  return store.updateItem(type, id, data, options);
+  if (options?.merge) {
+    return updateItemData(type, id, data);
+  }
+  return upsertItem(type, id, { data });
 }
 
 export async function deleteItem(
@@ -58,19 +98,30 @@ export async function deleteItem(
   return store.deleteItem(type, id);
 }
 
+export async function listChildItems(
+  parentType: string,
+  parentId: string,
+  childType?: string,
+  options?: QueryOptions
+): Promise<QueryResponse> {
+  const store = useLocalCrudlStore();
+  return store.listChildItems(parentType, parentId, childType, options);
+}
+
+/** @deprecated use listChildItems instead */
 export async function listChildren(
   parentType: string,
   parentId: string,
   childType?: string,
-  options?: { limit?: number; nextPage?: string }
+  options?: QueryOptions
 ): Promise<QueryResponse> {
   const store = useLocalCrudlStore();
-  return store.listChildren(parentType, parentId, childType, options);
+  return store.listChildItems(parentType, parentId, childType, options);
 }
 
 export async function listUserItems(
   type?: string,
-  options?: { limit?: number; nextPage?: string }
+  options?: QueryOptions
 ): Promise<QueryResponse> {
   const store = useLocalCrudlStore();
   return store.listUserItems(type, options);
