@@ -49,6 +49,8 @@ const pinia = createPinia()
 //pinia.use( PiniaSharedState )
 import PiniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 pinia.use(PiniaPluginPersistedstate)
+//import { PiniaColada } from '@pinia/colada'
+//pinia.use(PiniaColada)
 app.use(pinia)
 
 // Our app styles applied after all other packages above
