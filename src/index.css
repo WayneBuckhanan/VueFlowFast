@@ -1,13 +1,16 @@
 @import"https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;1,700&display=swap";
-@import"https://fonts.googleapis.com/icon?family=Material+Icons";
 @import "tailwindcss";
 @import "tailwindcss-primeui";
-@import "primeicons/primeicons.css";
+/* @plugin "@tailwindcss/typography"; */
+@plugin "@iconify/tailwind4" {
+  prefixes: mdi;
+};
+
 /* @custom-variant dark (&:where(.my-app-dark, .my-app-dark *)); // [configuration for dark mode switch in UI](https://primevue.org/tailwind/#darkmode)
 */
 
 /* Tailwind CSS default breakpoints
-'sm':    640, 'md':      768, 'lg':    1024, 'xl':    1280, '2xl':   1536,
+'sm':     640, 'md':     768, 'lg':    1024, 'xl':    1280, '2xl':   1536,
 updated variation on https://www.freecodecamp.org/news/the-100-correct-way-to-do-css-breakpoints-88d6a5ba1862/
 'sm':     700, 'md':    1400, 'lg':    2100,                'xl':    3500, '2xl':   7000,
 '720p':   700, '1080p': 1400, '1440p': 2100, '2k':    2100, '4k':    3500, '8k':    7000,

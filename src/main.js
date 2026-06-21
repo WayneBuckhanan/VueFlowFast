@@ -1,13 +1,7 @@
 const DEFAULT_PAGE_TITLE = 'Default App Title'
 // Base Vue config
 import { createApp } from 'vue'
-import App from './App.vue'
-const app = createApp(App)
-
-// Pinia store
-import { createPinia } from 'pinia'
-const pinia = createPinia()
-app.use(pinia)
+const app = createApp({ template: '<RouterView/>' }) // collapse to here since App.vue had one line
 
 // Vue Router with unplugin-vue-router config
 import { createRouter, createWebHistory } from 'vue-router'
@@ -24,6 +18,7 @@ router.beforeEach((to)=> {
 })
 app.use(router)
 
+// PrimeVue UI toolkit
 import PrimeVue from 'primevue/config'
 //import Theme from '@primeuix/themes/aura'
 import Theme from '@primeuix/themes/lara'
@@ -36,19 +31,28 @@ app.use(PrimeVue, {
       //darkModeSelector: '.my-app-dark',
       cssLayer: {
         name: 'primevue',
-        order: 'theme, base, primevue, components, utilities'
+        order: 'tailwind-base, theme, base, primevue, tailwind-utilities, components, utilities'
       }
     }
   }
 })
+//// PrimeVue Services
+//import ConfirmationService from 'primevue/confirmationservice'
+//app.use(ConfirmationService)
+//import ToastService from 'primevue/toastservice'
+//app.use(ToastService)
 
-// Toast service for notifications
-import ToastService from 'primevue/toastservice'
-app.use(ToastService)
+// Pinia browser store
+import { createPinia } from 'pinia'
+const pinia = createPinia()
+//import { PiniaSharedState } from 'pinia-shared-state'
+//pinia.use( PiniaSharedState )
+import PiniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+pinia.use(PiniaPluginPersistedstate)
+//import { PiniaColada } from '@pinia/colada'
+//pinia.use(PiniaColada)
+app.use(pinia)
 
 // Our app styles applied after all other packages above
 import './index.css'
-
-// Initialize auth store on app startup
-import { useAuthStore } from './stores/auth'
 app.mount('#app')

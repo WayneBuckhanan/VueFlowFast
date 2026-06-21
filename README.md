@@ -17,7 +17,7 @@ Inspired by the Vitesse repos, this is a baseline repo to clone as a start for a
 
 ## How to Use
 
-Assuming you have [git](https://git-scm.com) and [Node](https:/nodejs.org) v20 or later installed on your system, run:
+Assuming you have [git](https://git-scm.com) and [Node](https://nodejs.org) v22 or later installed on your system, run:
 
 ```bash
 git clone https://github.com/WayneBuckhanan/VueFlowFast <your-project-name>
@@ -79,8 +79,7 @@ The less Vue-centric configs are located in the root directory as `*.config.js` 
 
 - Due to the auto import of components, you cannot have SFCs anywhere in `src/pages/` or `src/components` with the same name. This includes in subdirectories or with equivalent PascalCase and kebab-case names. E.g. `src/pages/blog/thing-one.vue` will conflict with `src/pages/product/thing-one.vue` and with `src/components/widgets/ThingOne.vue`.
 - If you'd prefer the `src/views/` convention to house the page SFCs, you can symlink or rename `pages` and uncomment the appropriate lines in the `VueRouter` section of the `vite.config.js` in the project root.
-- Tailwind CSS, PostCSS, and AutoPrefixer are indirectly included by way of the `vitawind` package. If you want a version of one of those that is more recent than what vitawind includes, you can use npm to install them directly.
-- If you would prefer a different UI toolkit, simply remove the package/s and the config block in `src/main.js`. You'll want to make sure you are not using any of the previous components. The only files that should reference specific UI components are the index files and the SidebarContents component used there.
+- If you would prefer a different UI toolkit, simply remove the package/s and the config blocks in `src/main.js`. You'll want to make sure you are not using any of the previous components. The only files that should reference specific UI components are the index files and the SidebarContents component used there.
 - Pug syntax is lovely -- until it isn't. There are a few of the Tailwind CSS utility class patterns that do not play nicely in pug's `tag.class` approach to adding classes. Instead, you'll have to wrap any class names with `!:/[]` characters in a class property. You can have both styles of class lists, just know you can only have a single parenthetical for properties per tag. E.g. `h2.text-2xl.font-bold(class="dark:bg-slate-100 w-1/2 h-[10vh] !flex-grow")`.
 
 ## Possible Add-Ons
@@ -152,8 +151,6 @@ router.beforeResolve(async (to, from, next) => {
 })
 ```
 
-One use-case for this pattern is using the AWS Amplify libraries and components to interface with services like Cognito and API Gateway. You do not need to be using the Amplify layer of services on AWS to use the Amplify functions, components, and UI elements in your Vue project. You can include a manually drafted Amplify configuration block and initialization in the `src/main.js` file and then get access to the Authenticator component and API calling helper functions from Amplify libraries. Whether the benefits are worth the overhead is an exercise left to the reader.
-
 
 ### Additional Complementary Packages
 
@@ -164,19 +161,20 @@ This repo is for getting into flow fast with your Vue project. Once you've built
 
 Additionally, you may find that you need or want to define more complex CSS than the Tailwind utility classes easily provide. Stylus can be added for Pug-like features in your CSS blocks with no additional config needed. Simply run `npm install stylus` and use it in your `<style lang="stylus">` tags.
 
-Backend services can be added with a single config file via [SST](https://sst.dev). For example, Javascript or Typescript functions can be defined in files in an `api/` directory and deployed to Amazon AWS, Cloudflare, or other services supported by SST or the underlying Pulumi providers. See the `sst-examples` branch and [examples in the SST docs](https://sst.dev/docs) for more ideas on how to leverage this "infrastructure as code" (IaC) approach to complement this repo's quick front-end development with quick back-end services as well.
+Backend services can be added with a single config file via [SST](https://sst.dev) or [Wrangler](https://developers.cloudflare.com/workers/wrangler/). For example, Javascript or Typescript functions can be defined in files in an `api/` directory and deployed to Amazon AWS via SST or Cloudflare via Wrangler. See the `sst-examples` branch and [examples in the SST docs](https://sst.dev/docs) for more ideas on how to leverage this "infrastructure as code" (IaC) approach to complement this repo's quick front-end development with quick back-end services as well.
+
+For authentication that is not tied to a specific provider, [Better Auth](https://better-auth.com) can be integrated into the project and hosted with the deployed files.
 
 
 ## TODO
 
 - Branches/alt repos for more in-depth demos/starters?
-  - Serverless resources on AWS via SST
+  - Serverless resources on AWS/Cloudflare
   - more page examples
   - Pinia store example
-  - Cloudflare Pages deploy via Wrangler
   - eslint, prettier, testing examples
   - Preline with and/or replacing primary UI toolkit
-  - Example [Aider](https://aider.chat) preferences file for LLM-assisted pair programming
+  - Example [AGENTS.md](https://agents.md) preferences file for LLM-assisted pair/agentic programming
 - Link all un/plugins, packages, and docs
 - Thinking in Vue article?
 - (What would you like to see?)
@@ -186,5 +184,5 @@ Backend services can be added with a single config file via [SST](https://sst.de
 
 [MIT License](LICENSE)
 
-Copyright (C) 2024-2025 Wayne Buckhanan
+Copyright (C) 2024-2026 Wayne Buckhanan
 
