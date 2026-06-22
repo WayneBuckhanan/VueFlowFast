@@ -1,4 +1,7 @@
 .env*
+!.env_example
+.dev.vars*
+!.dev.vars_example
 # Logs
 logs
 *.log
@@ -15,9 +18,6 @@ dist-ssr
 coverage
 *.local
 
-/cypress/videos/
-/cypress/screenshots/
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -27,6 +27,9 @@ coverage
 *.njsproj
 *.sln
 *.sw?
-
-*.tsbuildinfo
 .aider*
+
+# Build & deploy tools
+*.tsbuildinfo
+.sst
+.wrangler
