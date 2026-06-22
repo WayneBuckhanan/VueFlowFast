@@ -1,23 +1,21 @@
 <route>
 meta:
-  title: Remote Storage CRUDL Demo
+  title: CRUDL Demo (as Admin)
 </route>
 
 <template lang="pug">
 .m-8.flex-none
-  .flex.flex-col.gap-6
-    template(v-if="authStore.isAuthenticated")
-      Button(label="Logout" @click="authStore.logout()")
-    LoginOTP(v-else)
-    h1.text-3xl Hello
-    .prose
-      p Logged In? {{ authStore.isAuthenticated }}
-      p Admin? {{ authStore.isAdmin }}
-      p Sneaky admin? {{ authStore.isImpersonating }}
-      p User: {{ authStore.user }}
-      p Session: {{ authStore.session }}
-    template(v-if="authStore.isAuthenticated")
-      h1.text-3xl CRUDL Demo with Local Storage
+  // --- Authorization Gates ---
+  div(v-if="!authStore.isAuthenticated")
+    Card
+      template(#content) Please log in to view this page.
+  div(v-else-if="!authStore.isAdmin")
+    Card
+      template(#content)
+        .text-red-600.font-bold You do not have administrator privileges to access this page.
+  div(v-else)
+    .flex.flex-col.gap-6
+      h1.text-3xl CRUDL Demo with Remote Storage
       .flex.gap-3.items-end
         InputText(v-model="newItemText" placeholder="New item text")
         Button(@click="handleCreate" label="Create Top-Level" severity="success")
@@ -38,6 +36,21 @@ meta:
           label(for="filterRoot") Root
           RadioButton(v-model="filterType" inputId="filterChild" value="demo-child" name="filter")
           label(for="filterChild") Child
+        .flex.gap-2.items-center.ml-4
+          label(for="userFilter") User:
+          Select#userFilter(
+            v-model="selectedUserId"
+            :options="userSelectOptions"
+            optionLabel="displayLabel"
+            optionValue="id"
+            placeholder="All Users"
+            :showClear="true"
+            style="width: 250px"
+          )
+          Button(@click="loadUsers()" label="Refresh Users" severity="secondary" size="small")
+        .flex.gap-2.items-center.ml-4
+          Checkbox(v-model="filterByUser" inputId="filterByUser" binary)
+          label(for="filterByUser") Filter table by selected user
 
       DataTable(
         :value="items"
@@ -47,18 +60,21 @@ meta:
       )
         Column(field="id" header="ID")
         Column(field="data.text" header="Text")
+        Column(header="User")
+          template(#body="{data}")
+            span {{ data.user ? (userDisplayMap.get(data.user) || data.user) : 'None' }}
         Column(header="Actions")
           template(#body="{data}")
             .flex.gap-2
               Button(
                 @click="handleUpdate(data)"
-                icon="iconify mdi--edit" 
+                icon="pi pi-pencil" 
                 severity="info"
                 rounded
               )
               Button(
                 @click="handleDelete(data)"
-                icon="iconify mdi--delete"
+                icon="pi pi-trash"
                 severity="danger"
                 rounded
               )
@@ -91,16 +107,26 @@ meta:
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/betterAuth'
+import { useAuthStore, type User } from '@/stores/betterAuth'
 const authStore = useAuthStore()
 
-import { ref, onMounted, watchEffect, watch } from 'vue'
-import { createItem, readItem, upsertItem, updateItemData, deleteItem, listUserItems, listChildItems } from '@/crudl-client'
+import { useAuthAdminStore } from '@/stores/betterAuthAdmin'
+const authAdminStore = useAuthAdminStore()
+
+import * as CRUDL from '@/crudl-client'
+CRUDL.makeAdmin()
 
 interface DemoItem {
   id: string
+  type: string
+  parentId: string
+  parentType: string
   data: {
     text: string
+  }
+  meta: {
+    createdAt: string
+    updatedAt: string
   }
 }
 
@@ -110,28 +136,58 @@ const newChildText = ref('')
 const items = ref<DemoItem[]>([])
 const selectedItem = ref<DemoItem>()
 const children = ref<DemoItem[]>([])
+const users = ref<User[]>([])
+const selectedUserId = ref<string>('')
+const filterByUser = ref<boolean>(false)
+
+const userSelectOptions = computed(() => {
+  const anonymousOption = {
+    id: 'anonymous',
+    displayLabel: 'Anonymous'
+  }
+  const userOptions = users.value.map(user => ({
+    ...user,
+    displayLabel: `${user.name} <${user.email}>`
+  }))
+  return [anonymousOption, ...userOptions]
+})
+
+const userDisplayMap = computed(() => {
+  const map = new Map<string, string>()
+  users.value.forEach(user => {
+    map.set(user.id, `${user.name} <${user.email}>`)
+  })
+  return map
+})
+
 watchEffect(async () => {
   if (!selectedItem.value) {
     children.value = []
     return
   }
-  const { items } = await listChildItems(selectedItem.value.type, selectedItem.value.id)
+  const { items } = await CRUDL.listChildren(selectedItem.value.type, selectedItem.value.id)
   children.value = items as DemoItem[]
 })
 
 async function refreshItems(type = filterType.value) {
-  const response = await listUserItems(type === 'all' ? undefined : type)
+  const response = await CRUDL.listUserItems(
+    type === 'all' ? undefined : type,
+    filterByUser.value && selectedUserId.value ? { user: selectedUserId.value } : undefined
+  )
   items.value = response.items as DemoItem[]
 }
 
 watch(filterType, () => refreshItems())
+watch(selectedUserId, () => refreshItems())
+watch(filterByUser, () => refreshItems())
 
 async function handleCreate() {
   if (!newItemText.value) return
-
-  await createItem({
+  
+  await CRUDL.createItem({
     type: 'demo',
-    data: { text: newItemText.value }
+    data: { text: newItemText.value },
+    user: selectedUserId.value,
   })
   newItemText.value = ''
   await refreshItems()
@@ -139,12 +195,13 @@ async function handleCreate() {
 
 async function handleCreateChild() {
   if (!newChildText.value || !selectedItem.value) return
-
-  await createItem({
+  
+  await CRUDL.createItem({
     type: 'demo-child',
     data: { text: newChildText.value },
     parentType: selectedItem.value.type || 'demo',
-    parentId: selectedItem.value.id
+    parentId: selectedItem.value.id,
+    user: selectedUserId.value || selectedItem.value.user,
   })
   newChildText.value = ''
   await refreshItems()
@@ -153,17 +210,37 @@ async function handleCreateChild() {
 async function handleUpdate(item: DemoItem) {
   const newText = prompt('Edit text:', item.data.text)
   if (newText !== null) {
-    await updateItemData(item.type, item.id, { text: newText })
+    await CRUDL.updateItemData(item.type, item.id, { text: newText })
+    //await CRUDL.upsertItem(item.type, item.id, { ...item, data: { text: newText }, user: selectedUserId.value })
     await refreshItems()
   }
 }
 
 async function handleDelete(item: DemoItem) {
   if (confirm('Delete this item?')) {
-    await deleteItem(item.type, item.id)
+    await CRUDL.deleteItem(item.type, item.id)
     await refreshItems()
   }
 }
 
-onMounted(refreshItems)
+async function loadUsers() {
+  try {
+    const data = await authAdminStore.listUsers()
+    users.value = data.users || []
+  } catch (error) {
+    console.log("Error", error.message)
+    users.value = []
+  }
+}
+
+watch(() => [authStore.isReady, authAdminStore.isReady], async (isReady) => {
+  if (isReady[0] && isReady[1]) {
+    await nextTick() // let the pinia store mount properly
+    loadUsers()
+  }
+}, { immediate: true })
+
+onMounted(async() => {
+  await refreshItems()
+})
 </script>

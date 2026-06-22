@@ -1,5 +1,7 @@
 .env*
+!.env_example
 .dev.vars*
+!.dev.vars_example
 # Logs
 logs
 *.log

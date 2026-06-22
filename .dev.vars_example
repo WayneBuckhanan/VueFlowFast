@@ -1,0 +1,7 @@
+ENVIRONMENT="development"
+BETTER_AUTH_URL="http://localhost:5173"
+BETTER_AUTH_SECRET="run `openssl rand -base64 32` to generate the 32 char minimum hash secret"
+MAILJET_API_KEY="mail-jet-key"
+MAILJET_API_SECRET="mailjet-secret"
+FROM_EMAIL="noreply@newapp.example.com"
+FROM_NAME="Admin @ New App"

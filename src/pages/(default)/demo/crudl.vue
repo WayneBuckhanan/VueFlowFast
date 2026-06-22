@@ -1,23 +1,17 @@
 <route>
 meta:
-  title: Remote Storage CRUDL Demo
+  title: CRUDL Demo (as User)
 </route>
 
 <template lang="pug">
 .m-8.flex-none
-  .flex.flex-col.gap-6
-    template(v-if="authStore.isAuthenticated")
-      Button(label="Logout" @click="authStore.logout()")
-    LoginOTP(v-else)
-    h1.text-3xl Hello
-    .prose
-      p Logged In? {{ authStore.isAuthenticated }}
-      p Admin? {{ authStore.isAdmin }}
-      p Sneaky admin? {{ authStore.isImpersonating }}
-      p User: {{ authStore.user }}
-      p Session: {{ authStore.session }}
-    template(v-if="authStore.isAuthenticated")
-      h1.text-3xl CRUDL Demo with Local Storage
+  // --- Authorization Gates ---
+  div(v-if="!authStore.isAuthenticated")
+    Card
+      template(#content) Please log in to view this page.
+  div(v-else)
+    .flex.flex-col.gap-6
+      h1.text-3xl CRUDL Demo with Remote Storage
       .flex.gap-3.items-end
         InputText(v-model="newItemText" placeholder="New item text")
         Button(@click="handleCreate" label="Create Top-Level" severity="success")
@@ -52,13 +46,13 @@ meta:
             .flex.gap-2
               Button(
                 @click="handleUpdate(data)"
-                icon="iconify mdi--edit" 
+                icon="pi pi-pencil" 
                 severity="info"
                 rounded
               )
               Button(
                 @click="handleDelete(data)"
-                icon="iconify mdi--delete"
+                icon="pi pi-trash"
                 severity="danger"
                 rounded
               )
@@ -94,13 +88,19 @@ meta:
 import { useAuthStore } from '@/stores/betterAuth'
 const authStore = useAuthStore()
 
-import { ref, onMounted, watchEffect, watch } from 'vue'
-import { createItem, readItem, upsertItem, updateItemData, deleteItem, listUserItems, listChildItems } from '@/crudl-client'
+import * as CRUDL from '@/crudl-client'
 
 interface DemoItem {
   id: string
+  type: string
+  parentId: string
+  parentType: string
   data: {
     text: string
+  }
+  meta: {
+    createdAt: string
+    updatedAt: string
   }
 }
 
@@ -115,12 +115,12 @@ watchEffect(async () => {
     children.value = []
     return
   }
-  const { items } = await listChildItems(selectedItem.value.type, selectedItem.value.id)
+  const { items } = await CRUDL.listChildren(selectedItem.value.type, selectedItem.value.id)
   children.value = items as DemoItem[]
 })
 
 async function refreshItems(type = filterType.value) {
-  const response = await listUserItems(type === 'all' ? undefined : type)
+  const response = await CRUDL.listUserItems(type === 'all' ? undefined : type)
   items.value = response.items as DemoItem[]
 }
 
@@ -128,8 +128,8 @@ watch(filterType, () => refreshItems())
 
 async function handleCreate() {
   if (!newItemText.value) return
-
-  await createItem({
+  
+  await CRUDL.createItem({
     type: 'demo',
     data: { text: newItemText.value }
   })
@@ -139,8 +139,8 @@ async function handleCreate() {
 
 async function handleCreateChild() {
   if (!newChildText.value || !selectedItem.value) return
-
-  await createItem({
+  
+  await CRUDL.createItem({
     type: 'demo-child',
     data: { text: newChildText.value },
     parentType: selectedItem.value.type || 'demo',
@@ -153,14 +153,15 @@ async function handleCreateChild() {
 async function handleUpdate(item: DemoItem) {
   const newText = prompt('Edit text:', item.data.text)
   if (newText !== null) {
-    await updateItemData(item.type, item.id, { text: newText })
+    await CRUDL.updateItemData(item.type, item.id, { text: newText })
+    //await CRUDL.upsertItem(item.type, item.id, { ...item, data: { text: newText }, user: selectedUserId.value })
     await refreshItems()
   }
 }
 
 async function handleDelete(item: DemoItem) {
   if (confirm('Delete this item?')) {
-    await deleteItem(item.type, item.id)
+    await CRUDL.deleteItem(item.type, item.id)
     await refreshItems()
   }
 }

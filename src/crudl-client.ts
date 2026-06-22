@@ -28,6 +28,5 @@
 // /* deprecated */ async function listChildren( parentType: string, parentId: string, childType?: string, /* can be 'all' (default) to retrieve all direct children */ options?: { limit?: number; nextCursor?: string }): Promise<QueryResponse> // deprecated, use listChildItems
 // ```
 
-export * from './crudl-api-local'
-//export * from './crudl-api-aws'
-//export * from './crudl-api-cloudflare'
+//export * from './crudl-api-local'
+export * from './crudl-api-remote' // generic REST interface, doesn't care if it is on AWS or Cloudflare, as long as the API root paths are set properly
