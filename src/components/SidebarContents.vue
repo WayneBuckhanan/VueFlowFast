@@ -1,10 +1,10 @@
 <template lang="pug">
-Menu(:model="menuItems").mx-2
+UNavigationMenu(:items="menuItems" orientation="vertical" class="w-full")
 </template>
 
 <script setup>
 const menuItems = [
-  { label: 'Home', icon: 'iconify mdi--home', url: '/' },
-  { label: 'Help', icon: 'iconify mdi--help', url: '/help' },
+  { label: 'Home', icon: 'i-mdi-home', to: '/' },
+  { label: 'Help', icon: 'i-mdi-help-circle', to: '/help' },
 ]
 </script>
