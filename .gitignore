@@ -31,5 +31,6 @@ coverage
 
 # Build & deploy tools
 *.tsbuildinfo
+*.d.ts
 .sst
 .wrangler

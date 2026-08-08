@@ -12,7 +12,7 @@ Inspired by the Vitesse repos, this is a baseline repo to clone as a start for a
 - Pug integration to allow for clean <template lang="pug"> blocks
 - Unplugin auto imports of components, functions, and composables for clean <script setup> blocks
 - Tailwind CSS utility classes often eliminate the need for a <style> block
-- UI toolkit (currently PrimeVue) provides a cohesive component library to build quickly
+- UI toolkit (currently Nuxt UI) provides a cohesive component library to build quickly
 
 
 ## How to Use

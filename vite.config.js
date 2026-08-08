@@ -3,10 +3,7 @@ import { defineConfig } from 'vite'
 import Vue from '@vitejs/plugin-vue'
 // Baseline Helpers
 import VueRouter from 'vue-router/vite'
-import AutoImport from 'unplugin-auto-import/vite'
-import Components from 'unplugin-vue-components/vite'
-import { PrimeVueResolver } from '@primevue/auto-import-resolver'
-import TailwindCSS from '@tailwindcss/vite'
+import NuxtUI from '@nuxt/ui/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -25,26 +22,34 @@ export default defineConfig({
     }),
     // ⚠️  VueRouter() must be placed before Vue
     Vue(),
-    TailwindCSS(),
-    Components({
-      resolvers: [
-        PrimeVueResolver(),
-      ],
+    // Nuxt UI ships its own Tailwind CSS v4 Vite plugin, and bundles both
+    // unplugin-vue-components (for `U*` components) and unplugin-auto-import
+    // (for the 'vue'/'vue-router' presets + its own composables like useToast).
+    // Registering separate instances of either plugin throws, so we configure
+    // Nuxt UI's own instance instead of adding our own.
+    NuxtUI({
+      components: { // config for embedded unplugin-vue-components
+        //e.g. dirs: ['src/components'],
+      },
+      autoImport: { // config for embedded unplugin-auto-import
+        imports: [
+          'vue', 'vue-router', //'pinia' // presets from github.com/unjs/unimport used by unplugin-auto-import
+          //{ '@/store/auth.js': ['useAuthStore']}, // Pinia auth store
+        ]
+      },
+      prose: true,
     }),
-    AutoImport({ imports: [
-      'vue', 'pinia', 'vue-router', // presets from github.com/unjs/unimport used by unplugin-auto-import
-      //{ '@/store/auth.js': ['useAuthStore']}, // Pinia auth store
-    ]}),
   ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      vue: 'vue/dist/vue.esm-bundler.js', // to allow the main.js to absorb the nearly empty App.vue file
+      //vue: 'vue/dist/vue.esm-bundler.js', // to allow the main.js to absorb the nearly empty App.vue file
     }
   },
   server: {
     port: 5173,
     open: true,
+    allowedHosts: ['.local'],
   },
   build: {
     chunkSizeWarningLimit: 650,
