@@ -1,7 +1,10 @@
 const DEFAULT_PAGE_TITLE = 'Default App Title'
 // Base Vue config
 import { createApp } from 'vue'
-const app = createApp({ template: '<RouterView/>' }) // collapse to here since App.vue had one line
+import App from './App.vue'
+const app = createApp(App)
+// Can't collapse the App.vue file here with the UApp wrapper since Nuxt UI can't manage the auto import this way for some reason
+//const app = createApp({ template: '<UApp><RouterView/></UApp>' }) // collapse to here since App.vue had one line
 
 // Vue Router with unplugin-vue-router config
 import { createRouter, createWebHistory } from 'vue-router'
@@ -18,30 +21,6 @@ router.beforeEach((to)=> {
 })
 app.use(router)
 
-// PrimeVue UI toolkit
-import PrimeVue from 'primevue/config'
-//import Theme from '@primeuix/themes/aura'
-import Theme from '@primeuix/themes/lara'
-//import Theme from '@primeuix/themes/nora'
-//import Theme from '@primeuix/themes/material'
-app.use(PrimeVue, {
-  theme: {
-    preset: Theme,
-    options: {
-      //darkModeSelector: '.my-app-dark',
-      cssLayer: {
-        name: 'primevue',
-        order: 'tailwind-base, theme, base, primevue, tailwind-utilities, components, utilities'
-      }
-    }
-  }
-})
-//// PrimeVue Services
-//import ConfirmationService from 'primevue/confirmationservice'
-//app.use(ConfirmationService)
-//import ToastService from 'primevue/toastservice'
-//app.use(ToastService)
-
 // Pinia browser store
 import { createPinia } from 'pinia'
 const pinia = createPinia()
@@ -52,6 +31,10 @@ pinia.use(PiniaPluginPersistedstate)
 //import { PiniaColada } from '@pinia/colada'
 //pinia.use(PiniaColada)
 app.use(pinia)
+
+// Nuxt UI
+import ui from '@nuxt/ui/vue-plugin'
+app.use(ui)
 
 // Our app styles applied after all other packages above
 import './index.css'

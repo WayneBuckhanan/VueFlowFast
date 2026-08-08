@@ -84,7 +84,10 @@ export const useAuthStore = defineStore('betterAuth', () => {
     isLoading.value = true
     error.value = null
     try {
-      await authClient.signIn.email(credentials)
+      const { error: authError } = await authClient.signIn.email(credentials)
+      if(authError) {
+        throw new Error(authError.message || 'Login failed. Please check your credentials and try again.')
+      }
       // After successful sign-in, fetch the user session
       await initialize(true)
     } catch (e: any) {

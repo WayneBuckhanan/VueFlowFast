@@ -1,121 +1,91 @@
 <template lang="pug">
 // This component handles Login, Sign Up, and Forgot Password forms.
-.auth-panel.flex.flex-col.gap-4.items-center.justify-center.p-4.py-12.rounded-lg.shadow-md.w-full.max-w-md(class="bg-white dark:bg-slate-400")
+UCard.w-full.max-w-md(:ui="{ root: 'rounded-lg shadow-md' }")
   // Login Form
   div(v-if="currentView === 'login'")
-    h2.text-2xl.font-bold.text-gray-700.mb-6.text-center Login
-    form(@submit.prevent="handleLogin")
-      .mb-4
-        label.block.text-gray-700.text-sm.font-bold.mb-2(for="email") Email
-        InputText#email.w-full.px-3.py-2.border.rounded-lg(
-          type="email"
-          v-model="email"
-          placeholder="Enter your email"
-          required
-          class="focus:outline-none focus:ring-2 focus:ring-blue-500"
+    h2.text-2xl.font-bold.mb-6.text-center Login
+    form.flex.flex-col.gap-4(@submit.prevent="handleLogin")
+      UFormField(label="Email" name="email")
+        UInput.w-full(type="email" v-model="email" placeholder="Enter your email" required)
+      UFormField(label="Password" name="password")
+        UInput.w-full(type="password" v-model="password" placeholder="Enter your password" required)
+      .flex.items-center.justify-between
+        UCheckbox(v-model="rememberMe" label="Remember me")
+        UButton(
+          label="Forgot password?"
+          variant="link"
+          color="neutral"
+          size="sm"
+          @click.prevent="switchView('forgot')"
         )
-      .mb-6
-        label.block.text-gray-700.text-sm.font-bold.mb-2(for="password") Password
-        InputText#password.w-full.px-3.py-2.border.rounded-lg(
-          type="password"
-          v-model="password"
-          placeholder="Enter your password"
-          required
-          class="focus:outline-none focus:ring-2 focus:ring-blue-500"
-        )
-      .flex.items-center.justify-between.mb-4
-        .flex.items-center
-          InputText#remember.me-2.h-4.w-4.text-blue-600(
-            type="checkbox"
-            v-model="rememberMe"
-            class="focus:ring-blue-500 border-gray-300 rounded"
-          )
-          label.text-sm.text-gray-600(for="remember") Remember me
-        a.text-sm.text-blue-600.cursor-pointer(@click.prevent="switchView('forgot')" class="hover:underline") Forgot password?
-      Button.w-full.bg-blue-600.text-white.font-bold.py-2.px-4.rounded-lg(
+      UButton.w-full.justify-center(
         label="Login"
         type="submit"
+        block
         :disabled="authStore.isLoading"
         :loading="authStore.isLoading"
-        class="hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       )
-      .mt-4.text-center.text-sm.text-gray-600
-        span Don't have an account?
-        a.text-blue-600.ml-1.cursor-pointer(@click.prevent="switchView('signup')" class="hover:underline") Sign up
+      p.text-center.text-sm.text-muted
+        | Don't have an account?
+        UButton.ml-1(label="Sign up" variant="link" size="sm" @click.prevent="switchView('signup')")
 
   // Sign Up Form
   div(v-else-if="currentView === 'signup'")
-    h2.text-2xl.font-bold.text-gray-700.mb-6.text-center Sign Up
-    form(@submit.prevent="handleSignUp")
-      .mb-4
-        label.block.text-gray-700.text-sm.font-bold.mb-2(for="name") Name
-        InputText#name.w-full.px-3.py-2.border.rounded-lg(
-          v-model="name"
-          type="text"
-          placeholder="Enter your full name"
-          required
-          class="focus:outline-none focus:ring-2 focus:ring-blue-500"
-        )
-      .mb-4
-        label.block.text-gray-700.text-sm.font-bold.mb-2(for="signup-email") Email
-        InputText#signup-email.w-full.px-3.py-2.border.rounded-lg(
-          v-model="email"
-          type="email"
-          placeholder="Enter your email"
-          required
-          class="focus:outline-none focus:ring-2 focus:ring-blue-500"
-        )
-      .mb-6
-        label.block.text-gray-700.text-sm.font-bold.mb-2(for="signup-password") Password
-        InputText#signup-password.w-full.px-3.py-2.border.rounded-lg(
-          v-model="password"
-          type="password"
-          placeholder="Create a password"
-          required
-          class="focus:outline-none focus:ring-2 focus:ring-blue-500"
-        )
-      Button.w-full.bg-green-600.text-white.font-bold.py-2.px-4.rounded-lg(
+    h2.text-2xl.font-bold.mb-6.text-center Sign Up
+    form.flex.flex-col.gap-4(@submit.prevent="handleSignUp")
+      UFormField(label="Name" name="name")
+        UInput.w-full(v-model="name" type="text" placeholder="Enter your full name" required)
+      UFormField(label="Email" name="signup-email")
+        UInput.w-full(v-model="email" type="email" placeholder="Enter your email" required)
+      UFormField(label="Password" name="signup-password")
+        UInput.w-full(v-model="password" type="password" placeholder="Create a password" required)
+      UButton.w-full.justify-center(
         label="Sign Up"
         type="submit"
+        color="success"
+        block
         :disabled="authStore.isLoading"
         :loading="authStore.isLoading"
-        class="hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
       )
-      .mt-4.text-center.text-sm.text-gray-600
-        span Already have an account?
-        a.text-blue-600.ml-1.cursor-pointer(@click.prevent="switchView('login')" class="hover:underline") Login
+      p.text-center.text-sm.text-muted
+        | Already have an account?
+        UButton.ml-1(label="Login" variant="link" size="sm" @click.prevent="switchView('login')")
 
   // Forgot Password Form
   div(v-else-if="currentView === 'forgot'")
-    h2.text-2xl.font-bold.text-gray-700.mb-6.text-center Forgot Password
-    p.text-gray-600.mb-6.text-center Enter your email address and we will send you a link to reset your password.
-    form(@submit.prevent="handleForgotPassword")
-      .mb-6
-        label.block.text-gray-700.text-sm.font-bold.mb-2(for="forgot-email") Email
-        InputText#forgot-email.w-full.px-3.py-2.border.rounded-lg(
-          v-model="email"
-          type="email"
-          placeholder="Enter your email"
-          required
-          class="focus:outline-none focus:ring-2 focus:ring-blue-500"
-        )
-      Button.w-full.bg-orange-600.text-white.font-bold.py-2.px-4.rounded-lg(
+    h2.text-2xl.font-bold.mb-6.text-center Forgot Password
+    p.text-muted.mb-6.text-center Enter your email address and we will send you a link to reset your password.
+    form.flex.flex-col.gap-4(@submit.prevent="handleForgotPassword")
+      UFormField(label="Email" name="forgot-email")
+        UInput.w-full(v-model="email" type="email" placeholder="Enter your email" required)
+      UButton.w-full.justify-center(
         label="Send Reset Email"
         type="submit"
+        color="warning"
+        block
         :disabled="authStore.isLoading"
         :loading="authStore.isLoading"
-        class="hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
       )
-      .mt-4.text-center.text-sm.text-gray-600
-        a.text-blue-600.cursor-pointer(@click.prevent="switchView('login')" class="hover:underline") Back to Login
+      p.text-center.text-sm
+        UButton(label="Back to Login" variant="link" size="sm" color="neutral" @click.prevent="switchView('login')")
 
   // Success Message Display
-  .mt-4(v-if="successMessage")
-    .p-3.bg-green-100.text-green-700.rounded-lg.text-sm {{ successMessage }}
+  UAlert.mt-4(
+    v-if="successMessage"
+    color="success"
+    variant="subtle"
+    :title="successMessage"
+    icon="i-lucide-check-circle"
+  )
 
   // Error Display
-  .mt-4(v-if="authStore.error")
-    .p-3.bg-red-100.text-red-700.rounded-lg.text-sm {{ authStore.error }}
+  UAlert.mt-4(
+    v-if="authStore.error"
+    color="error"
+    variant="subtle"
+    :title="authStore.error"
+    icon="i-lucide-alert-circle"
+  )
 </template>
 
 <script setup lang="ts">
